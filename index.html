@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏆 Gestor de Torneos Profesional v2.0</title>
+    <title>🏆 Gestor de Torneos Profesional</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
     <div class="container">
         <!-- Header Principal -->
         <header class="main-header">
-            <h1>🏆 Gestor de Torneos Profesional</h1>
-            <p>Sistema tipo Mundial: Fase de Grupos + Eliminatorias</p>
+            <h1 id="headerTitle">🏆 Gestor de Torneos Profesional</h1>
+            <p>Sistema inteligente para cualquier tipo de competición</p>
         </header>
 
         <!-- Notificaciones -->
@@ -25,73 +24,76 @@
             
             <div class="form-row">
                 <div class="form-group">
-                    <label>Deporte:</label>
-                    <select id="sportSelect" onchange="updateSportIcon()">
-                        <option value="football">⚽ Fútbol</option>
-                        <option value="basketball">🏀 Baloncesto</option>
-                        <option value="tennis">🎾 Tenis</option>
-                        <option value="chess">♟️ Ajedrez</option>
-                        <option value="esports">🎮 eSports</option>
+                    <label for="sportSelect">Deporte:</label>
+                    <select id="sportSelect" onchange="onSportChange()">
+                        <optgroup label="🏆 Deportes Colectivos">
+                            <option value="football">⚽ Fútbol</option>
+                            <option value="basketball">🏀 Baloncesto</option>
+                            <option value="volleyball">🏐 Voleibol</option>
+                            <option value="handball">🤾 Balonmano</option>
+                        </optgroup>
+                        <optgroup label="🎯 Deportes Individuales">
+                            <option value="tennis">🎾 Tenis</option>
+                            <option value="chess">♟️ Ajedrez</option>
+                            <option value="padel">🏸 Pádel</option>
+                            <option value="table_tennis">🏓 Tenis de Mesa</option>
+                        </optgroup>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Número de Grupos:</label>
-                    <select id="numGroups" onchange="updateTeamCount()">
-                        <option value="2">2 Grupos</option>
-                        <option value="4" selected>4 Grupos</option>
-                        <option value="8">8 Grupos</option>
+                    <label for="formatSelect">Formato de Competición:</label>
+                    <select id="formatSelect" onchange="onFormatChange()">
+                        <option value="auto">🤖 Automático (Recomendado)</option>
+                        <option value="groups_knockout">👥 Grupos + Eliminatorias</option>
+                        <option value="single_elimination">🏆 Eliminación Directa</option>
+                        <option value="round_robin">🔄 Round-Robin (Todos vs Todos)</option>
+                        <option value="swiss">🎯 Sistema Suizo</option>
                     </select>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>Equipos por Grupo:</label>
-                    <select id="teamsPerGroup">
-                        <option value="3">3 Equipos</option>
-                        <option value="4" selected>4 Equipos</option>
-                        <option value="5">5 Equipos</option>
-                    </select>
+                    <label for="numParticipants">Número de Equipos/Jugadores:</label>
+                    <input type="number" id="numParticipants" min="2" max="64" value="8" onchange="updateTeamCount()">
                 </div>
 
                 <div class="form-group">
-                    <label>Canchas/Escenarios:</label>
-                    <select id="numVenues">
-                        <option value="1">1 Cancha</option>
-                        <option value="2">2 Canchas</option>
-                        <option value="3" selected>3 Canchas</option>
-                        <option value="4">4 Canchas</option>
-                    </select>
+                    <label for="numGroups">Número de Grupos:</label>
+                    <input type="number" id="numGroups" min="1" max="16" value="2" onchange="updateRecommendations()">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="numVenues">Canchas/Escenarios:</label>
+                    <input type="number" id="numVenues" min="1" max="10" value="2">
+                </div>
+
+                <div class="form-group">
+                    <label for="matchDuration">Duración por Partido (minutos):</label>
+                    <input type="number" id="matchDuration" min="5" max="180" value="30">
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Participantes (uno por línea):</label>
-                <textarea id="participantsList" rows="10" placeholder="Equipo 1&#10;Equipo 2&#10;Equipo 3&#10;Equipo 4..."></textarea>
-                <div id="teamCount" class="text-muted"></div>
+                <label for="participantsList">Participantes (uno por línea):</label>
+                <textarea id="participantsList" rows="8" placeholder="Equipo 1&#10;Equipo 2&#10;Equipo 3&#10;Equipo 4&#10;Equipo 5&#10;Equipo 6&#10;Equipo 7&#10;Equipo 8"></textarea>
+                <div id="teamCount" class="info-text"></div>
+                <div id="recommendationInfo" class="info-box"></div>
             </div>
 
             <div class="button-group">
-                <button onclick="generateTournament()" class="btn-primary">
-                    🎲 Generar Torneo
-                </button>
-                <button onclick="loadExample()" class="btn-secondary">
-                    📋 Cargar Ejemplo
-                </button>
-                <button onclick="saveTournament()" class="btn-secondary">
-                    💾 Guardar
-                </button>
-                <button onclick="loadTournament()" class="btn-secondary">
-                    📂 Cargar
-                </button>
-                <button onclick="exportFullReport()" class="btn-secondary">
-                    📄 Reporte Completo
-                </button>
+                <button type="button" onclick="generateTournament()" class="btn-primary">🎲 Generar Torneo</button>
+                <button type="button" onclick="loadExample()" class="btn-secondary">📋 Cargar Ejemplo</button>
+                <button type="button" onclick="saveTournament()" class="btn-secondary">💾 Guardar</button>
+                <button type="button" onclick="loadTournament()" class="btn-secondary">📂 Cargar</button>
+                <button type="button" onclick="exportFullReport()" class="btn-secondary">📄 Reporte</button>
             </div>
         </section>
 
-        <!-- Dashboard Principal -->
+        <!-- Dashboard -->
         <section id="dashboardSection" class="hidden">
             <div class="dashboard-grid">
                 <div class="stat-card">
@@ -103,57 +105,37 @@
                     <p id="statGroups">0</p>
                 </div>
                 <div class="stat-card">
-                    <h3>Partidos Jugados</h3>
-                    <p id="statPlayed">0</p>
+                    <h3>Total Partidos</h3>
+                    <p id="statTotalMatches">0</p>
                 </div>
                 <div class="stat-card">
-                    <h3>Partidos Restantes</h3>
-                    <p id="statRemaining">0</p>
+                    <h3>Partidos Jugados</h3>
+                    <p id="statPlayed">0</p>
                 </div>
             </div>
         </section>
 
         <!-- Fase de Grupos -->
-        <section id="groupsPhaseSection" class="hidden">
+        <section id="groupsSection" class="hidden">
             <div class="section-header">
                 <h2>📊 Fase de Grupos</h2>
                 <div>
-                    <button onclick="exportPDF('groups')" class="btn-pdf">📄 Exportar Grupos</button>
-                    <button onclick="exportPDF('standings')" class="btn-pdf">📊 Exportar Tablas</button>
+                    <button type="button" onclick="exportPDF('groups')" class="btn-pdf">📄 Exportar</button>
                 </div>
             </div>
-            
-            <!-- Grupos -->
             <div id="groupsContainer"></div>
-            
-            <!-- Fixture de Grupos -->
-            <div id="groupMatchesContainer"></div>
-            
-            <!-- Tablas por Grupo -->
-            <div id="groupStandingsContainer"></div>
+            <div id="fixtureContainer"></div>
+            <div id="standingsContainer"></div>
         </section>
 
-        <!-- Fase Eliminatoria -->
+        <!-- Eliminatorias -->
         <section id="knockoutSection" class="hidden">
             <div class="section-header">
                 <h2>🏆 Fase Eliminatoria</h2>
-                <button onclick="exportPDF('bracket')" class="btn-pdf">📄 Exportar Eliminatorias</button>
+                <button type="button" onclick="exportPDF('knockout')" class="btn-pdf">📄 Exportar</button>
             </div>
-            
-            <!-- Clasificados -->
-            <div id="qualifiedTeamsContainer"></div>
-            
-            <!-- Brackets -->
+            <div id="qualifiedContainer"></div>
             <div id="bracketContainer"></div>
-        </section>
-
-        <!-- Partidos -->
-        <section id="matchesSection" class="hidden">
-            <div class="section-header">
-                <h2>📅 Calendario de Partidos</h2>
-                <button onclick="exportPDF('matches')" class="btn-pdf">📄 Exportar Calendario</button>
-            </div>
-            <div id="matchesContainer"></div>
         </section>
     </div>
 
