@@ -2,20 +2,16 @@
 let tournamentData = {
     sport: 'football',
     format: 'auto',
-    numParticipants: 16,
-    numGroups: 4,
-    numVenues: 3,
+    numParticipants: 8,
+    numGroups: 2,
+    numVenues: 2,
     matchDuration: 30,
-    tiebreaker: 'points',
     participants: [],
     groups: [],
     groupMatches: [],
-    knockoutMatches: [],
-    groupStandings: new Map(),
     knockoutBrackets: [],
-    venues: [],
-    qualifiedTeams: [],
-    isIndividual: false
+    groupStandings: new Map(),
+    venues: []
 };
 
 // Información de deportes
@@ -24,24 +20,18 @@ const sportInfo = {
     basketball: { type: 'team', name: 'Baloncesto', icon: '🏀', recommendedFormat: 'groups_knockout' },
     volleyball: { type: 'team', name: 'Voleibol', icon: '🏐', recommendedFormat: 'groups_knockout' },
     handball: { type: 'team', name: 'Balonmano', icon: '🤾', recommendedFormat: 'groups_knockout' },
-    esports_team: { type: 'team', name: 'eSports (Equipos)', icon: '🎮', recommendedFormat: 'groups_knockout' },
     tennis: { type: 'individual', name: 'Tenis', icon: '🎾', recommendedFormat: 'single_elimination' },
     chess: { type: 'individual', name: 'Ajedrez', icon: '♟️', recommendedFormat: 'swiss' },
-    padel: { type: 'individual', name: 'Pádel', icon: '🏸', recommendedFormat: 'double_elimination' },
-    table_tennis: { type: 'individual', name: 'Tenis de Mesa', icon: '🏓', recommendedFormat: 'single_elimination' },
-    esports_individual: { type: 'individual', name: 'eSports (Individual)', icon: '🎮', recommendedFormat: 'double_elimination' }
+    padel: { type: 'individual', name: 'Pádel', icon: '🏸', recommendedFormat: 'single_elimination' },
+    table_tennis: { type: 'individual', name: 'Tenis de Mesa', icon: '🏓', recommendedFormat: 'single_elimination' }
 };
 
 // Inicialización
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
     loadExample();
     updateTeamCount();
     onSportChange();
-    
-    const saved = localStorage.getItem('tournamentDataV4');
-    if (saved) {
-        showNotification('Torneo guardado encontrado', 'success');
-    }
+    console.log('Sistema inicializado correctamente');
 });
 
 // Mostrar notificaciones
@@ -51,9 +41,9 @@ function showNotification(message, type = 'success') {
     notification.className = `notification ${type}`;
     notification.classList.remove('hidden');
     
-    setTimeout(() => {
+    setTimeout(function() {
         notification.classList.add('hidden');
-    }, 4000);
+    }, 3000);
 }
 
 // Cambio de deporte
@@ -61,73 +51,42 @@ function onSportChange() {
     const sport = document.getElementById('sportSelect').value;
     const info = sportInfo[sport];
     
-    tournamentData.isIndividual = info.type === 'individual';
-    
-    // Actualizar header
-    const header = document.querySelector('.main-header h1');
-    header.textContent = `${info.icon} Gestor de Torneos Profesional`;
-    
-    // Actualizar formato recomendado
-    const formatSelect = document.getElementById('formatSelect');
-    formatSelect.value = 'auto';
-    
-    // Mostrar información
-    const formatInfo = document.getElementById('formatInfo');
-    if (tournamentData.isIndividual) {
-        formatInfo.innerHTML = `
-            <strong>${info.name} (Individual)</strong><br>
-            Recomendado: Sistema de llaves con posible muerte súbita.<br>
-            Formatos ideales: Eliminación Directa o Suizo.
-        `;
-    } else {
-        formatInfo.innerHTML = `
-            <strong>${info.name} (Colectivo)</strong><br>
-            Recomendado: Fase de grupos + eliminatorias.<br>
-            Formatos ideales: Grupos + Llaves o Round-Robin.
-        `;
+    if (info) {
+        document.getElementById('headerTitle').textContent = `${info.icon} Gestor de Torneos Profesional`;
+        
+        const formatSelect = document.getElementById('formatSelect');
+        formatSelect.value = 'auto';
+        
+        const recommendationDiv = document.getElementById('recommendationInfo');
+        if (info.type === 'individual') {
+            recommendationDiv.innerHTML = `<strong>${info.name} (Individual)</strong> - Recomendado: Eliminación Directa o Suizo`;
+        } else {
+            recommendationDiv.innerHTML = `<strong>${info.name} (Colectivo)</strong> - Recomendado: Grupos + Eliminatorias`;
+        }
     }
-    
-    updateRecommendations();
 }
 
 // Cambio de formato
 function onFormatChange() {
-    const format = document.getElementById('formatSelect').value;
     updateRecommendations();
 }
 
 // Actualizar recomendaciones
 function updateRecommendations() {
-    const numParticipants = parseInt(document.getElementById('numParticipants').value) || 16;
-    const numGroups = parseInt(document.getElementById('numGroups').value) || 4;
-    const sport = document.getElementById('sportSelect').value;
-    const info = sportInfo[sport];
+    const numParticipants = parseInt(document.getElementById('numParticipants').value) || 8;
+    const numGroups = parseInt(document.getElementById('numGroups').value) || 2;
     
-    // Información de participantes
-    const participantsInfo = document.getElementById('participantsInfo');
-    if (numParticipants < 4) {
-        participantsInfo.className = 'format-info warning';
-        participantsInfo.innerHTML = '⚠️ Se recomiendan al menos 4 participantes';
-    } else if (numParticipants > 32 && info.type === 'team') {
-        participantsInfo.className = 'format-info warning';
-        participantsInfo.innerHTML = '⚠️ Para equipos, se recomienda máximo 32 equipos';
-    } else {
-        participantsInfo.className = 'format-info success';
-        participantsInfo.innerHTML = `✅ ${numParticipants} participantes es un número válido`;
-    }
+    const recommendationDiv = document.getElementById('recommendationInfo');
     
-    // Información de grupos
-    const groupsInfo = document.getElementById('groupsInfo');
     if (numGroups > 1 && numParticipants % numGroups !== 0) {
-        groupsInfo.className = 'format-info warning';
-        const remainder = numParticipants % numGroups;
-        groupsInfo.innerHTML = `⚠️ ${numParticipants} participantes en ${numGroups} grupos: ${Math.floor(numParticipants / numGroups)} por grupo, ${remainder} grupos con descanso`;
+        recommendationDiv.className = 'info-box warning';
+        recommendationDiv.innerHTML = `⚠️ ${numParticipants} participantes en ${numGroups} grupos no es divisible exactamente`;
     } else if (numGroups === 1) {
-        groupsInfo.className = 'format-info';
-        groupsInfo.innerHTML = 'ℹ️ Un solo grupo: Round-Robin o Sistema Suizo';
+        recommendationDiv.className = 'info-box';
+        recommendationDiv.innerHTML = 'ℹ️ Un solo grupo: se usará Round-Robin';
     } else {
-        groupsInfo.className = 'format-info success';
-        groupsInfo.innerHTML = `✅ ${numParticipants} participantes en ${numGroups} grupos de ${numParticipants / numGroups}`;
+        recommendationDiv.className = 'info-box';
+        recommendationDiv.innerHTML = `✅ ${numParticipants} participantes en ${numGroups} grupos de ${numParticipants / numGroups}`;
     }
 }
 
@@ -135,103 +94,88 @@ function updateRecommendations() {
 function updateTeamCount() {
     const participants = document.getElementById('participantsList').value
         .split('\n')
-        .map(name => name.trim())
-        .filter(name => name !== '');
+        .map(function(name) { return name.trim(); })
+        .filter(function(name) { return name !== ''; });
     
     const countDiv = document.getElementById('teamCount');
     countDiv.innerHTML = `Equipos ingresados: <strong>${participants.length}</strong>`;
     
-    // Actualizar campo numérico
-    document.getElementById('numParticipants').value = participants.length || 16;
+    document.getElementById('numParticipants').value = participants.length || 8;
 }
 
-// Generar torneo completo
+// Generar torneo
 function generateTournament() {
-    try {
-        // Obtener configuración
-        tournamentData.sport = document.getElementById('sportSelect').value;
-        tournamentData.format = document.getElementById('formatSelect').value;
-        tournamentData.numParticipants = parseInt(document.getElementById('numParticipants').value);
-        tournamentData.numGroups = parseInt(document.getElementById('numGroups').value);
-        tournamentData.numVenues = parseInt(document.getElementById('numVenues').value);
-        tournamentData.matchDuration = parseInt(document.getElementById('matchDuration').value);
-        tournamentData.tiebreaker = document.getElementById('tiebreakerSelect').value;
-        
-        // Obtener participantes
-        const participantsText = document.getElementById('participantsList').value;
-        tournamentData.participants = participantsText
-            .split('\n')
-            .map(name => name.trim())
-            .filter(name => name !== '');
-        
-        // Validaciones
-        if (tournamentData.participants.length < 2) {
-            showNotification('Error: Se necesitan al menos 2 participantes', 'error');
-            return;
-        }
-        
-        // Crear canchas
-        tournamentData.venues = [];
-        for (let i = 1; i <= tournamentData.numVenues; i++) {
-            tournamentData.venues.push(`Cancha ${i}`);
-        }
-        
-        // Determinar formato automático
-        if (tournamentData.format === 'auto') {
-            const info = sportInfo[tournamentData.sport];
-            tournamentData.format = info.recommendedFormat;
-        }
-        
-        // Generar según formato
-        switch (tournamentData.format) {
-            case 'groups_knockout':
-                generateGroupsKnockout();
-                break;
-            case 'single_elimination':
-                generateSingleElimination();
-                break;
-            case 'double_elimination':
-                generateDoubleElimination();
-                break;
-            case 'round_robin':
-                generateRoundRobin();
-                break;
-            case 'swiss':
-                generateSwiss();
-                break;
-        }
-        
-        // Mostrar secciones
-        document.getElementById('dashboardSection').classList.remove('hidden');
-        document.getElementById('groupsPhaseSection').classList.remove('hidden');
-        document.getElementById('knockoutSection').classList.remove('hidden');
-        document.getElementById('matchesSection').classList.remove('hidden');
-        
-        // Renderizar
-        updateDashboard();
-        renderGroups();
-        renderGroupMatches();
-        renderGroupStandings();
-        renderQualifiedTeams();
-        renderKnockoutBrackets();
-        renderAllMatches();
-        
-        showNotification('Torneo generado exitosamente', 'success');
-        
-    } catch (error) {
-        console.error('Error al generar torneo:', error);
-        showNotification('Error al generar el torneo: ' + error.message, 'error');
+    console.log('Generando torneo...');
+    
+    // Obtener configuración
+    tournamentData.sport = document.getElementById('sportSelect').value;
+    tournamentData.format = document.getElementById('formatSelect').value;
+    tournamentData.numParticipants = parseInt(document.getElementById('numParticipants').value);
+    tournamentData.numGroups = parseInt(document.getElementById('numGroups').value);
+    tournamentData.numVenues = parseInt(document.getElementById('numVenues').value);
+    tournamentData.matchDuration = parseInt(document.getElementById('matchDuration').value);
+    
+    // Obtener participantes
+    const participantsText = document.getElementById('participantsList').value;
+    tournamentData.participants = participantsText
+        .split('\n')
+        .map(function(name) { return name.trim(); })
+        .filter(function(name) { return name !== ''; });
+    
+    // Validar
+    if (tournamentData.participants.length < 2) {
+        showNotification('Error: Se necesitan al menos 2 participantes', 'error');
+        return;
     }
+    
+    // Crear canchas
+    tournamentData.venues = [];
+    for (let i = 1; i <= tournamentData.numVenues; i++) {
+        tournamentData.venues.push('Cancha ' + i);
+    }
+    
+    // Determinar formato automático
+    if (tournamentData.format === 'auto') {
+        const info = sportInfo[tournamentData.sport];
+        tournamentData.format = info ? info.recommendedFormat : 'groups_knockout';
+    }
+    
+    // Generar según formato
+    if (tournamentData.format === 'single_elimination') {
+        generateSingleElimination();
+    } else if (tournamentData.format === 'round_robin') {
+        generateRoundRobin();
+    } else if (tournamentData.format === 'swiss') {
+        generateSwiss();
+    } else {
+        // groups_knockout (por defecto)
+        generateGroupsKnockout();
+    }
+    
+    // Mostrar secciones
+    document.getElementById('dashboardSection').classList.remove('hidden');
+    document.getElementById('groupsSection').classList.remove('hidden');
+    document.getElementById('knockoutSection').classList.remove('hidden');
+    
+    // Renderizar
+    updateDashboard();
+    renderGroups();
+    renderFixture();
+    renderStandings();
+    renderQualified();
+    renderBracket();
+    
+    showNotification('✅ Torneo generado exitosamente', 'success');
 }
 
-// Generar Grupos + Eliminatorias
+// Generar grupos + eliminatorias
 function generateGroupsKnockout() {
     distributeToGroups();
-    generateGroupPhase();
-    generateKnockoutPhase();
+    generateGroupMatches();
+    generateKnockoutBrackets();
 }
 
-// Generar Eliminación Directa
+// Generar eliminación directa
 function generateSingleElimination() {
     tournamentData.groups = [{
         id: 0,
@@ -241,153 +185,127 @@ function generateSingleElimination() {
     
     tournamentData.groupMatches = [];
     tournamentData.groupStandings = new Map();
-    
-    // Generar bracket directo
-    generateKnockoutPhase();
+    generateKnockoutBrackets();
 }
 
-// Generar Doble Eliminación
-function generateDoubleElimination() {
-    generateSingleElimination();
-    // Agregar bracket de perdedores
-}
-
-// Generar Round-Robin
+// Generar round-robin
 function generateRoundRobin() {
     if (tournamentData.numGroups > 1) {
         distributeToGroups();
-        generateGroupPhase();
+        generateGroupMatches();
+        tournamentData.knockoutBrackets = [];
     } else {
         tournamentData.groups = [{
             id: 0,
             name: 'Todos',
             participants: [...tournamentData.participants]
         }];
-        generateGroupPhase();
+        generateGroupMatches();
+        tournamentData.knockoutBrackets = [];
     }
 }
 
-// Generar Sistema Suizo
+// Generar sistema suizo
 function generateSwiss() {
     tournamentData.groups = [{
         id: 0,
         name: 'Todos',
         participants: [...tournamentData.participants]
     }];
-    generateGroupPhase();
+    generateGroupMatches();
+    tournamentData.knockoutBrackets = [];
 }
 
-// Distribuir equipos en grupos
+// Distribuir en grupos
 function distributeToGroups() {
     tournamentData.groups = [];
-    const shuffled = [...tournamentData.participants].sort(() => Math.random() - 0.5);
+    const shuffled = [...tournamentData.participants].sort(function() { return Math.random() - 0.5; });
     
     for (let i = 0; i < tournamentData.numGroups; i++) {
         tournamentData.groups.push({
             id: i,
-            name: `Grupo ${String.fromCharCode(65 + i)}`,
+            name: 'Grupo ' + String.fromCharCode(65 + i),
             participants: []
         });
     }
     
-    shuffled.forEach((participant, index) => {
+    shuffled.forEach(function(participant, index) {
         const groupIndex = index % tournamentData.numGroups;
         tournamentData.groups[groupIndex].participants.push(participant);
     });
 }
 
-// Generar fase de grupos
-function generateGroupPhase() {
+// Generar partidos de grupos
+function generateGroupMatches() {
     tournamentData.groupMatches = [];
     tournamentData.groupStandings = new Map();
     
     let matchId = 1;
     
-    tournamentData.groups.forEach(group => {
+    tournamentData.groups.forEach(function(group) {
         const participants = group.participants;
         const standings = new Map();
         
-        participants.forEach(p => {
+        participants.forEach(function(p) {
             standings.set(p, {
-                points: 0, played: 0, wins: 0, draws: 0, losses: 0,
-                goalsFor: 0, goalsAgainst: 0, goalDifference: 0
+                points: 0,
+                played: 0,
+                wins: 0,
+                draws: 0,
+                losses: 0,
+                goalsFor: 0,
+                goalsAgainst: 0,
+                goalDifference: 0
             });
         });
         
         tournamentData.groupStandings.set(group.id, standings);
         
-        // Generar partidos (Round-Robin dentro del grupo)
-        const teams = [...participants];
-        if (teams.length % 2 !== 0) {
-            teams.push('BYE');
-        }
-        
-        const numRounds = teams.length - 1;
-        const numMatchesPerRound = teams.length / 2;
-        
-        for (let round = 0; round < numRounds; round++) {
-            for (let match = 0; match < numMatchesPerRound; match++) {
-                const home = teams[match];
-                const away = teams[teams.length - 1 - match];
-                
-                if (home !== 'BYE' && away !== 'BYE') {
-                    const matchObj = {
-                        id: matchId,
-                        phase: 'group',
-                        groupId: group.id,
-                        groupName: group.name,
-                        round: round + 1,
-                        participant1: home,
-                        participant2: away,
-                        score1: null,
-                        score2: null,
-                        winner: null,
-                        venue: tournamentData.venues[(matchId - 1) % tournamentData.numVenues],
-                        status: 'scheduled'
-                    };
-                    tournamentData.groupMatches.push(matchObj);
-                    matchId++;
-                }
+        // Generar todos contra todos
+        for (let i = 0; i < participants.length; i++) {
+            for (let j = i + 1; j < participants.length; j++) {
+                const match = {
+                    id: matchId,
+                    groupId: group.id,
+                    groupName: group.name,
+                    participant1: participants[i],
+                    participant2: participants[j],
+                    score1: null,
+                    score2: null,
+                    winner: null,
+                    venue: tournamentData.venues[(matchId - 1) % tournamentData.numVenues],
+                    status: 'scheduled'
+                };
+                tournamentData.groupMatches.push(match);
+                matchId++;
             }
-            
-            // Rotar equipos
-            const last = teams.pop();
-            teams.splice(1, 0, last);
         }
     });
 }
 
-// Generar fase eliminatoria
-function generateKnockoutPhase() {
-    tournamentData.knockoutMatches = [];
+// Generar brackets de eliminatoria
+function generateKnockoutBrackets() {
     tournamentData.knockoutBrackets = [];
     
-    const totalQualified = tournamentData.numGroups > 1 ? 
+    const totalTeams = tournamentData.numGroups > 1 ? 
         tournamentData.numGroups * 2 : 
         Math.pow(2, Math.ceil(Math.log2(tournamentData.participants.length)));
     
-    const numRounds = Math.log2(totalQualified);
+    const numRounds = Math.log2(totalTeams);
     
     let matchId = tournamentData.groupMatches.length + 1;
     
-    const roundNames = {
-        1: 'Dieciseisavos de Final',
-        2: 'Octavos de Final',
-        3: 'Cuartos de Final',
-        4: 'Semifinales',
-        5: 'Final'
-    };
+    const roundNames = ['', 'Dieciseisavos', 'Octavos', 'Cuartos', 'Semifinales', 'Final'];
     
     for (let round = 1; round <= numRounds; round++) {
-        const matchesInRound = totalQualified / Math.pow(2, round);
+        const matchesInRound = totalTeams / Math.pow(2, round);
         const roundMatches = [];
         
         for (let i = 0; i < matchesInRound; i++) {
-            const match = {
+            roundMatches.push({
                 id: matchId,
-                phase: 'knockout',
                 round: round,
-                roundName: roundNames[round] || `Ronda ${round}`,
+                roundName: roundNames[round] || ('Ronda ' + round),
                 participant1: null,
                 participant2: null,
                 score1: null,
@@ -395,8 +313,7 @@ function generateKnockoutPhase() {
                 winner: null,
                 venue: tournamentData.venues[(matchId - 1) % tournamentData.numVenues],
                 status: 'pending'
-            };
-            roundMatches.push(match);
+            });
             matchId++;
         }
         
@@ -406,15 +323,17 @@ function generateKnockoutPhase() {
 
 // Actualizar dashboard
 function updateDashboard() {
-    const totalMatches = tournamentData.groupMatches.length + tournamentData.knockoutBrackets.flat().length;
-    const playedMatches = tournamentData.groupMatches.filter(m => m.status === 'completed').length;
-    const totalTime = totalMatches * tournamentData.matchDuration / 60;
+    const totalMatches = tournamentData.groupMatches.length + 
+        (tournamentData.knockoutBrackets.length > 0 ? tournamentData.knockoutBrackets.flat().length : 0);
+    
+    const playedMatches = tournamentData.groupMatches.filter(function(m) { 
+        return m.status === 'completed'; 
+    }).length;
     
     document.getElementById('statParticipants').textContent = tournamentData.participants.length;
     document.getElementById('statGroups').textContent = tournamentData.numGroups;
     document.getElementById('statTotalMatches').textContent = totalMatches;
     document.getElementById('statPlayed').textContent = playedMatches;
-    document.getElementById('statTime').textContent = `${Math.ceil(totalTime)}h`;
 }
 
 // Renderizar grupos
@@ -422,19 +341,14 @@ function renderGroups() {
     const container = document.getElementById('groupsContainer');
     container.innerHTML = '<div class="groups-grid">';
     
-    tournamentData.groups.forEach((group, index) => {
+    tournamentData.groups.forEach(function(group, index) {
         container.innerHTML += `
             <div class="group-card">
-                <div class="group-title group-bg-${index % 8}">
-                    ${group.name}
-                </div>
+                <div class="group-title group-bg-${index % 8}">${group.name}</div>
                 <div class="group-teams">
-                    ${group.participants.map(team => 
-                        `<div class="group-team">
-                            <span>${team}</span>
-                            <span class="badge">${index + 1}</span>
-                        </div>`
-                    ).join('')}
+                    ${group.participants.map(function(team) {
+                        return `<div class="group-team">${team}</div>`;
+                    }).join('')}
                 </div>
             </div>
         `;
@@ -443,68 +357,58 @@ function renderGroups() {
     container.innerHTML += '</div>';
 }
 
-// Renderizar partidos de grupos
-function renderGroupMatches() {
-    const container = document.getElementById('groupMatchesContainer');
-    container.innerHTML = '<h3>📅 Fixture de Fase de Grupos</h3>';
+// Renderizar fixture
+function renderFixture() {
+    const container = document.getElementById('fixtureContainer');
+    container.innerHTML = '<h3>📅 Partidos de Grupos</h3>';
     
     if (tournamentData.groupMatches.length === 0) {
         container.innerHTML += '<p>No hay partidos de grupos (formato de eliminación directa)</p>';
         return;
     }
     
-    const rounds = {};
-    tournamentData.groupMatches.forEach(match => {
-        const key = `Fecha ${match.round}`;
-        if (!rounds[key]) rounds[key] = [];
-        rounds[key].push(match);
-    });
-    
-    Object.keys(rounds).forEach((round, roundIndex) => {
-        const roundDiv = document.createElement('div');
-        roundDiv.className = 'match-round';
-        roundDiv.innerHTML = `<div class="round-title">${round}</div>`;
-        
-        const matchesDiv = document.createElement('div');
-        matchesDiv.className = 'matches-container';
-        matchesDiv.dataset.round = roundIndex + 1;
-        
-        rounds[round].forEach(match => {
-            const matchCard = document.createElement('div');
-            matchCard.className = 'match-card';
-            matchCard.dataset.matchId = match.id;
-            matchCard.innerHTML = `
-                <span class="match-group-badge group-bg-${match.groupId % 8}">${match.groupName}</span>
-                <span class="match-venue">🏟️ ${match.venue}</span>
-                <div class="match-teams">
-                    <div class="team-row">
-                        <span class="team-name">${match.participant1}</span>
-                        <input type="number" class="team-score" 
-                               placeholder="0" 
-                               value="${match.score1 ?? ''}"
-                               onchange="updateGroupScore(${match.id}, 1, this.value)">
-                    </div>
-                    <div class="team-row">
-                        <span class="team-name">${match.participant2}</span>
-                        <input type="number" class="team-score" 
-                               placeholder="0" 
-                               value="${match.score2 ?? ''}"
-                               onchange="updateGroupScore(${match.id}, 2, this.value)">
-                    </div>
-                    ${match.winner ? `<span class="winner-badge">✅ Ganador: ${match.winner}</span>` : ''}
-                </div>
-            `;
-            matchesDiv.appendChild(matchCard);
+    // Agrupar por grupo
+    tournamentData.groups.forEach(function(group, groupIndex) {
+        const groupMatches = tournamentData.groupMatches.filter(function(m) { 
+            return m.groupId === group.id; 
         });
         
-        roundDiv.appendChild(matchesDiv);
-        container.appendChild(roundDiv);
+        if (groupMatches.length > 0) {
+            container.innerHTML += `
+                <div class="match-round">
+                    <div class="match-round-title">${group.name}</div>
+            `;
+            
+            groupMatches.forEach(function(match) {
+                container.innerHTML += `
+                    <div class="match-card">
+                        <span class="match-group-badge group-bg-${groupIndex % 8}">${match.groupName}</span>
+                        <span class="match-venue">🏟️ ${match.venue}</span>
+                        <div class="team-row">
+                            <span class="team-name">${match.participant1}</span>
+                            <input type="number" class="team-score" placeholder="0" 
+                                   value="${match.score1 ?? ''}"
+                                   onchange="updateGroupScore(${match.id}, 1, this.value)">
+                        </div>
+                        <div class="team-row">
+                            <span class="team-name">${match.participant2}</span>
+                            <input type="number" class="team-score" placeholder="0" 
+                                   value="${match.score2 ?? ''}"
+                                   onchange="updateGroupScore(${match.id}, 2, this.value)">
+                        </div>
+                        ${match.winner ? `<span class="winner-badge">✅ ${match.winner}</span>` : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML += '</div>';
+        }
     });
 }
 
-// Actualizar marcador de fase de grupos
+// Actualizar marcador de grupo
 function updateGroupScore(matchId, teamNumber, score) {
-    const match = tournamentData.groupMatches.find(m => m.id === matchId);
+    const match = tournamentData.groupMatches.find(function(m) { return m.id === matchId; });
     if (!match) return;
     
     if (teamNumber === 1) {
@@ -525,21 +429,21 @@ function updateGroupScore(matchId, teamNumber, score) {
         
         updateGroupStandings(match);
         updateDashboard();
-        checkAndPopulateKnockout();
+        populateKnockoutBrackets();
     }
     
-    renderGroupMatches();
-    renderGroupStandings();
-    renderQualifiedTeams();
-    renderKnockoutBrackets();
+    renderFixture();
+    renderStandings();
+    renderQualified();
+    renderBracket();
 }
 
-// Actualizar clasificación del grupo
+// Actualizar clasificación
 function updateGroupStandings(match) {
     const standings = tournamentData.groupStandings.get(match.groupId);
     if (!standings) return;
     
-    const updateStats = (teamName, result, gf, ga) => {
+    const updateStats = function(teamName, result, gf, ga) {
         const stats = standings.get(teamName);
         if (!stats) return;
         
@@ -571,31 +475,33 @@ function updateGroupStandings(match) {
     }
 }
 
-// Renderizar tablas por grupo
-function renderGroupStandings() {
-    const container = document.getElementById('groupStandingsContainer');
-    container.innerHTML = '<h3>📊 Tablas de Posiciones por Grupo</h3>';
+// Renderizar tablas
+function renderStandings() {
+    const container = document.getElementById('standingsContainer');
+    container.innerHTML = '<h3>📊 Tablas de Posiciones</h3>';
     
     if (tournamentData.groupStandings.size === 0) {
-        container.innerHTML += '<p>No hay clasificación (formato de eliminación directa)</p>';
+        container.innerHTML += '<p>No hay clasificación disponible</p>';
         return;
     }
     
-    tournamentData.groups.forEach((group, index) => {
+    tournamentData.groups.forEach(function(group, groupIndex) {
         const standings = tournamentData.groupStandings.get(group.id);
         if (!standings) return;
         
         const sortedTeams = Array.from(standings.entries())
-            .map(([name, stats]) => ({ name, ...stats }))
-            .sort((a, b) => {
+            .map(function(entry) { 
+                return { name: entry[0], ...entry[1] }; 
+            })
+            .sort(function(a, b) {
                 if (b.points !== a.points) return b.points - a.points;
                 if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
                 return b.goalsFor - a.goalsFor;
             });
         
         container.innerHTML += `
-            <div class="group-standings">
-                <div class="group-title group-bg-${index % 8}">${group.name}</div>
+            <div class="group-card">
+                <div class="group-title group-bg-${groupIndex % 8}">${group.name}</div>
                 <table class="standings-table">
                     <thead>
                         <tr>
@@ -612,20 +518,22 @@ function renderGroupStandings() {
                         </tr>
                     </thead>
                     <tbody>
-                        ${sortedTeams.map((team, idx) => `
-                            <tr class="${idx < 2 ? 'position-qualified' : ''}">
-                                <td><strong>${idx + 1}</strong></td>
-                                <td>${team.name}</td>
-                                <td>${team.played}</td>
-                                <td>${team.wins}</td>
-                                <td>${team.draws}</td>
-                                <td>${team.losses}</td>
-                                <td>${team.goalsFor}</td>
-                                <td>${team.goalsAgainst}</td>
-                                <td>${team.goalDifference > 0 ? '+' : ''}${team.goalDifference}</td>
-                                <td><strong>${team.points}</strong></td>
-                            </tr>
-                        `).join('')}
+                        ${sortedTeams.map(function(team, idx) {
+                            return `
+                                <tr class="${idx < 2 ? 'position-qualified' : ''}">
+                                    <td>${idx + 1}</td>
+                                    <td>${team.name}</td>
+                                    <td>${team.played}</td>
+                                    <td>${team.wins}</td>
+                                    <td>${team.draws}</td>
+                                    <td>${team.losses}</td>
+                                    <td>${team.goalsFor}</td>
+                                    <td>${team.goalsAgainst}</td>
+                                    <td>${team.goalDifference > 0 ? '+' : ''}${team.goalDifference}</td>
+                                    <td><strong>${team.points}</strong></td>
+                                </tr>
+                            `;
+                        }).join('')}
                     </tbody>
                 </table>
             </div>
@@ -633,55 +541,52 @@ function renderGroupStandings() {
     });
 }
 
-// Verificar y poblar eliminatorias
-function checkAndPopulateKnockout() {
-    const allGroupMatchesCompleted = tournamentData.groupMatches.every(m => m.status === 'completed');
+// Poblar brackets de eliminatoria
+function populateKnockoutBrackets() {
+    const allCompleted = tournamentData.groupMatches.every(function(m) { 
+        return m.status === 'completed'; 
+    });
     
-    if (allGroupMatchesCompleted && tournamentData.knockoutBrackets.length > 0) {
-        const matchups = getQualifiedTeams();
-        
-        const firstRound = tournamentData.knockoutBrackets[0];
-        firstRound.forEach((match, index) => {
-            if (matchups[index]) {
-                match.participant1 = matchups[index].participant1;
-                match.participant2 = matchups[index].participant2;
-                match.status = 'scheduled';
-            }
-        });
-    }
-}
-
-// Obtener clasificados
-function getQualifiedTeams() {
+    if (!allCompleted || tournamentData.knockoutBrackets.length === 0) return;
+    
     const qualified = [];
     
-    tournamentData.groupStandings.forEach((standings, groupId) => {
-        const group = tournamentData.groups.find(g => g.id === groupId);
+    tournamentData.groupStandings.forEach(function(standings, groupId) {
         const sortedTeams = Array.from(standings.entries())
-            .map(([name, stats]) => ({ name, ...stats }))
-            .sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
+            .map(function(entry) { 
+                return { name: entry[0], ...entry[1] }; 
+            })
+            .sort(function(a, b) { return b.points - a.points; });
         
         if (sortedTeams.length >= 2) {
-            qualified.push({
-                participant1: sortedTeams[0].name,
-                participant2: sortedTeams[1].name
-            });
+            qualified.push(sortedTeams[0].name, sortedTeams[1].name);
         }
     });
     
-    return qualified;
+    const firstRound = tournamentData.knockoutBrackets[0];
+    firstRound.forEach(function(match, index) {
+        if (index * 2 < qualified.length) {
+            match.participant1 = qualified[index * 2] || 'Por definir';
+            match.participant2 = qualified[index * 2 + 1] || 'Por definir';
+            match.status = 'scheduled';
+        }
+    });
 }
 
-// Renderizar equipos clasificados
-function renderQualifiedTeams() {
-    const container = document.getElementById('qualifiedTeamsContainer');
-    container.innerHTML = '<h3>✅ Equipos Clasificados a Eliminatorias</h3><div class="qualified-grid">';
+// Renderizar clasificados
+function renderQualified() {
+    const container = document.getElementById('qualifiedContainer');
+    container.innerHTML = '<h3>✅ Clasificados</h3><div class="qualified-grid">';
     
-    tournamentData.groupStandings.forEach((standings, groupId) => {
-        const group = tournamentData.groups.find(g => g.id === groupId);
+    tournamentData.groupStandings.forEach(function(standings, groupId) {
+        const group = tournamentData.groups.find(function(g) { return g.id === groupId; });
+        if (!group) return;
+        
         const sortedTeams = Array.from(standings.entries())
-            .map(([name, stats]) => ({ name, ...stats }))
-            .sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
+            .map(function(entry) { 
+                return { name: entry[0], ...entry[1] }; 
+            })
+            .sort(function(a, b) { return b.points - a.points; });
         
         if (sortedTeams.length >= 2) {
             container.innerHTML += `
@@ -697,40 +602,39 @@ function renderQualifiedTeams() {
     container.innerHTML += '</div>';
 }
 
-// Renderizar brackets de eliminatoria
-function renderKnockoutBrackets() {
+// Renderizar bracket
+function renderBracket() {
     const container = document.getElementById('bracketContainer');
     container.innerHTML = '';
     
-    tournamentData.knockoutBrackets.forEach((round, index) => {
+    if (tournamentData.knockoutBrackets.length === 0) {
+        container.innerHTML = '<p>No hay fase eliminatoria</p>';
+        return;
+    }
+    
+    tournamentData.knockoutBrackets.forEach(function(round, index) {
         container.innerHTML += `
-            <div class="bracket-round">
-                <div class="round-header">
-                    <h3>${round[0]?.roundName || 'Ronda ' + (index + 1)}</h3>
-                </div>
+            <div class="match-round">
+                <div class="match-round-title">${round[0]?.roundName || 'Ronda ' + (index + 1)}</div>
         `;
         
-        round.forEach(match => {
+        round.forEach(function(match) {
             container.innerHTML += `
                 <div class="match-card">
                     <span class="match-venue">🏟️ ${match.venue}</span>
-                    <div class="match-teams">
-                        <div class="team-row">
-                            <span class="team-name">${match.participant1 || 'Por definir'}</span>
-                            <input type="number" class="team-score" 
-                                   placeholder="0" 
-                                   value="${match.score1 ?? ''}"
-                                   onchange="updateKnockoutScore(${match.id}, 1, this.value)">
-                        </div>
-                        <div class="team-row">
-                            <span class="team-name">${match.participant2 || 'Por definir'}</span>
-                            <input type="number" class="team-score" 
-                                   placeholder="0" 
-                                   value="${match.score2 ?? ''}"
-                                   onchange="updateKnockoutScore(${match.id}, 2, this.value)">
-                        </div>
-                        ${match.winner ? `<span class="winner-badge">✅ Ganador: ${match.winner}</span>` : ''}
+                    <div class="team-row">
+                        <span class="team-name">${match.participant1 || 'Por definir'}</span>
+                        <input type="number" class="team-score" placeholder="0" 
+                               value="${match.score1 ?? ''}"
+                               onchange="updateKnockoutScore(${match.id}, 1, this.value)">
                     </div>
+                    <div class="team-row">
+                        <span class="team-name">${match.participant2 || 'Por definir'}</span>
+                        <input type="number" class="team-score" placeholder="0" 
+                               value="${match.score2 ?? ''}"
+                               onchange="updateKnockoutScore(${match.id}, 2, this.value)">
+                    </div>
+                    ${match.winner ? `<span class="winner-badge">✅ ${match.winner}</span>` : ''}
                 </div>
             `;
         });
@@ -745,8 +649,8 @@ function updateKnockoutScore(matchId, teamNumber, score) {
     let roundIndex = -1;
     let matchIndex = -1;
     
-    tournamentData.knockoutBrackets.forEach((round, rIdx) => {
-        round.forEach((m, mIdx) => {
+    tournamentData.knockoutBrackets.forEach(function(round, rIdx) {
+        round.forEach(function(m, mIdx) {
             if (m.id === matchId) {
                 match = m;
                 roundIndex = rIdx;
@@ -774,56 +678,20 @@ function updateKnockoutScore(matchId, teamNumber, score) {
         if (roundIndex + 1 < tournamentData.knockoutBrackets.length) {
             const nextRound = tournamentData.knockoutBrackets[roundIndex + 1];
             const nextMatchIndex = Math.floor(matchIndex / 2);
-            const nextMatch = nextRound[nextMatchIndex];
             
-            if (matchIndex % 2 === 0) {
-                nextMatch.participant1 = match.winner;
-            } else {
-                nextMatch.participant2 = match.winner;
+            if (nextRound[nextMatchIndex]) {
+                if (matchIndex % 2 === 0) {
+                    nextRound[nextMatchIndex].participant1 = match.winner;
+                } else {
+                    nextRound[nextMatchIndex].participant2 = match.winner;
+                }
             }
         } else {
-            showNotification(`🏆 ¡${match.winner} es el Campeón!`, 'success');
+            showNotification('🏆 ¡' + match.winner + ' es el Campeón!', 'success');
         }
     }
     
-    updateDashboard();
-    renderKnockoutBrackets();
-    renderAllMatches();
-}
-
-// Renderizar todos los partidos
-function renderAllMatches() {
-    const container = document.getElementById('matchesContainer');
-    container.innerHTML = '<h3>📅 Calendario Completo</h3>';
-    
-    container.innerHTML += '<h4>Fase de Grupos</h4>';
-    tournamentData.groupMatches.forEach(match => {
-        container.innerHTML += `
-            <div class="match-card">
-                <span class="match-group-badge group-bg-${match.groupId % 8}">${match.groupName}</span>
-                <span>Fecha ${match.round}</span>
-                <span class="match-venue">🏟️ ${match.venue}</span>
-                <div class="team-row">
-                    <span>${match.participant1} ${match.score1 ?? '-'} vs ${match.score2 ?? '-'} ${match.participant2}</span>
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML += '<h4>Fase Eliminatoria</h4>';
-    tournamentData.knockoutBrackets.forEach(round => {
-        round.forEach(match => {
-            container.innerHTML += `
-                <div class="match-card">
-                    <span>${match.roundName}</span>
-                    <span class="match-venue">🏟️ ${match.venue}</span>
-                    <div class="team-row">
-                        <span>${match.participant1 || 'Por definir'} ${match.score1 ?? '-'} vs ${match.score2 ?? '-'} ${match.participant2 || 'Por definir'}</span>
-                    </div>
-                </div>
-            `;
-        });
-    });
+    renderBracket();
 }
 
 // Exportar PDF
@@ -831,40 +699,29 @@ function exportPDF(section) {
     let element = null;
     let filename = '';
     
-    switch(section) {
-        case 'groups':
-            element = document.getElementById('groupsPhaseSection');
-            filename = 'fase-grupos.pdf';
-            break;
-        case 'standings':
-            element = document.getElementById('groupStandingsContainer');
-            filename = 'tablas-posiciones.pdf';
-            break;
-        case 'bracket':
-            element = document.getElementById('knockoutSection');
-            filename = 'eliminatorias.pdf';
-            break;
-        case 'matches':
-            element = document.getElementById('matchesSection');
-            filename = 'calendario.pdf';
-            break;
+    if (section === 'groups') {
+        element = document.getElementById('groupsSection');
+        filename = 'fase-grupos.pdf';
+    } else if (section === 'knockout') {
+        element = document.getElementById('knockoutSection');
+        filename = 'eliminatorias.pdf';
     }
     
-    if (element) {
+    if (element && typeof html2pdf !== 'undefined') {
         html2pdf().from(element).save(filename);
-        showNotification(`PDF exportado: ${filename}`, 'success');
+        showNotification('PDF exportado', 'success');
+    } else {
+        showNotification('Error: Librería PDF no disponible', 'error');
     }
 }
 
 // Exportar reporte completo
 function exportFullReport() {
     const reportHTML = `
-        <div style="padding: 20px; font-family: Arial, sans-serif;">
-            <h1 style="color: #333;">Reporte Completo del Torneo</h1>
+        <div style="padding: 20px;">
+            <h1>Reporte del Torneo</h1>
             <p>Fecha: ${new Date().toLocaleDateString()}</p>
-            <p>Deporte: ${sportInfo[tournamentData.sport].name}</p>
-            <p>Formato: ${tournamentData.format}</p>
-            ${document.getElementById('groupsPhaseSection').innerHTML}
+            ${document.getElementById('groupsSection').innerHTML}
             ${document.getElementById('knockoutSection').innerHTML}
         </div>
     `;
@@ -872,28 +729,30 @@ function exportFullReport() {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = reportHTML;
     
-    html2pdf().from(tempDiv).save('reporte-completo.pdf');
-    showNotification('Reporte completo exportado', 'success');
+    if (typeof html2pdf !== 'undefined') {
+        html2pdf().from(tempDiv).save('reporte-completo.pdf');
+        showNotification('Reporte exportado', 'success');
+    }
 }
 
-// Guardar estado
+// Guardar torneo
 function saveTournament() {
     try {
         const dataToSave = {
             ...tournamentData,
             groupStandings: Array.from(tournamentData.groupStandings.entries())
         };
-        localStorage.setItem('tournamentDataV4', JSON.stringify(dataToSave));
-        showNotification('Torneo guardado correctamente', 'success');
+        localStorage.setItem('tournamentData', JSON.stringify(dataToSave));
+        showNotification('💾 Torneo guardado', 'success');
     } catch (error) {
         showNotification('Error al guardar', 'error');
     }
 }
 
-// Cargar estado
+// Cargar torneo
 function loadTournament() {
     try {
-        const saved = localStorage.getItem('tournamentDataV4');
+        const saved = localStorage.getItem('tournamentData');
         if (saved) {
             const data = JSON.parse(saved);
             tournamentData = {
@@ -902,24 +761,22 @@ function loadTournament() {
             };
             
             document.getElementById('dashboardSection').classList.remove('hidden');
-            document.getElementById('groupsPhaseSection').classList.remove('hidden');
+            document.getElementById('groupsSection').classList.remove('hidden');
             document.getElementById('knockoutSection').classList.remove('hidden');
-            document.getElementById('matchesSection').classList.remove('hidden');
             
             updateDashboard();
             renderGroups();
-            renderGroupMatches();
-            renderGroupStandings();
-            renderQualifiedTeams();
-            renderKnockoutBrackets();
-            renderAllMatches();
+            renderFixture();
+            renderStandings();
+            renderQualified();
+            renderBracket();
             
-            showNotification('Torneo cargado correctamente', 'success');
+            showNotification('📂 Torneo cargado', 'success');
         } else {
             showNotification('No hay torneo guardado', 'error');
         }
     } catch (error) {
-        showNotification('Error al cargar el torneo', 'error');
+        showNotification('Error al cargar', 'error');
     }
 }
 
@@ -927,16 +784,16 @@ function loadTournament() {
 function loadExample() {
     const exampleTeams = [
         'Argentina', 'Brasil', 'Francia', 'Alemania',
-        'España', 'Inglaterra', 'Portugal', 'Holanda',
-        'Italia', 'Bélgica', 'Uruguay', 'Croacia',
-        'México', 'Japón', 'Colombia', 'Senegal'
+        'España', 'Inglaterra', 'Portugal', 'Holanda'
     ];
     
     document.getElementById('participantsList').value = exampleTeams.join('\n');
-    document.getElementById('numParticipants').value = 16;
-    document.getElementById('numGroups').value = 4;
-    document.getElementById('numVenues').value = 3;
+    document.getElementById('numParticipants').value = 8;
+    document.getElementById('numGroups').value = 2;
+    document.getElementById('numVenues').value = 2;
     document.getElementById('matchDuration').value = 30;
+    
     updateTeamCount();
     updateRecommendations();
+    console.log('Ejemplo cargado: 8 equipos, 2 grupos');
 }
