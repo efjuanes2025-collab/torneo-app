@@ -3,17 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏆 Gestor de Torneos Profesional</title>
+    <title>🏆 Gestor de Torneos Profesional v2.0</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Librería para PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
     <div class="container">
+        <!-- Header Principal -->
         <header class="main-header">
             <h1>🏆 Gestor de Torneos Profesional</h1>
-            <p>Sistema completo para organizar competiciones deportivas</p>
+            <p>Sistema tipo Mundial: Fase de Grupos + Eliminatorias</p>
         </header>
+
+        <!-- Notificaciones -->
+        <div id="notification" class="notification hidden"></div>
 
         <!-- Configuración -->
         <section class="config-section">
@@ -22,7 +26,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Deporte:</label>
-                    <select id="sportSelect">
+                    <select id="sportSelect" onchange="updateSportIcon()">
                         <option value="football">⚽ Fútbol</option>
                         <option value="basketball">🏀 Baloncesto</option>
                         <option value="tennis">🎾 Tenis</option>
@@ -32,27 +36,22 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Sistema de Competición:</label>
-                    <select id="formatSelect">
-                        <option value="single">Eliminación Simple</option>
-                        <option value="double">Doble Eliminación</option>
-                        <option value="roundRobin">Round-Robin (Todos vs Todos)</option>
-                        <option value="swiss">Sistema Suizo</option>
+                    <label>Número de Grupos:</label>
+                    <select id="numGroups" onchange="updateTeamCount()">
+                        <option value="2">2 Grupos</option>
+                        <option value="4" selected>4 Grupos</option>
+                        <option value="8">8 Grupos</option>
                     </select>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>Número de Grupos:</label>
-                    <select id="numGroups">
-                        <option value="1">1 Grupo</option>
-                        <option value="2">2 Grupos</option>
-                        <option value="3">3 Grupos</option>
-                        <option value="4" selected>4 Grupos</option>
-                        <option value="5">5 Grupos</option>
-                        <option value="6">6 Grupos</option>
-                        <option value="8">8 Grupos</option>
+                    <label>Equipos por Grupo:</label>
+                    <select id="teamsPerGroup">
+                        <option value="3">3 Equipos</option>
+                        <option value="4" selected>4 Equipos</option>
+                        <option value="5">5 Equipos</option>
                     </select>
                 </div>
 
@@ -69,7 +68,8 @@
 
             <div class="form-group">
                 <label>Participantes (uno por línea):</label>
-                <textarea id="participantsList" rows="8" placeholder="Equipo 1&#10;Equipo 2&#10;Equipo 3&#10;Equipo 4&#10;Equipo 5&#10;Equipo 6&#10;Equipo 7&#10;Equipo 8"></textarea>
+                <textarea id="participantsList" rows="10" placeholder="Equipo 1&#10;Equipo 2&#10;Equipo 3&#10;Equipo 4..."></textarea>
+                <div id="teamCount" class="text-muted"></div>
             </div>
 
             <div class="button-group">
@@ -82,46 +82,78 @@
                 <button onclick="saveTournament()" class="btn-secondary">
                     💾 Guardar
                 </button>
+                <button onclick="loadTournament()" class="btn-secondary">
+                    📂 Cargar
+                </button>
+                <button onclick="exportFullReport()" class="btn-secondary">
+                    📄 Reporte Completo
+                </button>
             </div>
         </section>
 
-        <!-- Resumen del Torneo -->
-        <section id="summarySection" class="hidden">
-            <h2>📊 Resumen del Torneo</h2>
-            <div id="summaryContainer"></div>
+        <!-- Dashboard Principal -->
+        <section id="dashboardSection" class="hidden">
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <h3>Participantes</h3>
+                    <p id="statParticipants">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Grupos</h3>
+                    <p id="statGroups">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Partidos Jugados</h3>
+                    <p id="statPlayed">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Partidos Restantes</h3>
+                    <p id="statRemaining">0</p>
+                </div>
+            </div>
         </section>
 
-        <!-- Grupos -->
-        <section id="groupsSection" class="hidden">
-            <h2>👥 Grupos</h2>
-            <div id="groupsContainer"></div>
-        </section>
-
-        <!-- Bracket Display -->
-        <section id="bracketSection" class="hidden">
+        <!-- Fase de Grupos -->
+        <section id="groupsPhaseSection" class="hidden">
             <div class="section-header">
-                <h2>📊 Llaves del Torneo</h2>
-                <button onclick="exportPDF('bracket')" class="btn-pdf">📄 Exportar PDF</button>
+                <h2>📊 Fase de Grupos</h2>
+                <div>
+                    <button onclick="exportPDF('groups')" class="btn-pdf">📄 Exportar Grupos</button>
+                    <button onclick="exportPDF('standings')" class="btn-pdf">📊 Exportar Tablas</button>
+                </div>
             </div>
+            
+            <!-- Grupos -->
+            <div id="groupsContainer"></div>
+            
+            <!-- Fixture de Grupos -->
+            <div id="groupMatchesContainer"></div>
+            
+            <!-- Tablas por Grupo -->
+            <div id="groupStandingsContainer"></div>
+        </section>
+
+        <!-- Fase Eliminatoria -->
+        <section id="knockoutSection" class="hidden">
+            <div class="section-header">
+                <h2>🏆 Fase Eliminatoria</h2>
+                <button onclick="exportPDF('bracket')" class="btn-pdf">📄 Exportar Eliminatorias</button>
+            </div>
+            
+            <!-- Clasificados -->
+            <div id="qualifiedTeamsContainer"></div>
+            
+            <!-- Brackets -->
             <div id="bracketContainer"></div>
         </section>
 
         <!-- Partidos -->
         <section id="matchesSection" class="hidden">
             <div class="section-header">
-                <h2>📅 Partidos Programados</h2>
-                <button onclick="exportPDF('matches')" class="btn-pdf">📄 Exportar PDF</button>
+                <h2>📅 Calendario de Partidos</h2>
+                <button onclick="exportPDF('matches')" class="btn-pdf">📄 Exportar Calendario</button>
             </div>
             <div id="matchesContainer"></div>
-        </section>
-
-        <!-- Clasificación -->
-        <section id="standingsSection" class="hidden">
-            <div class="section-header">
-                <h2>📈 Clasificación Final</h2>
-                <button onclick="exportPDF('standings')" class="btn-pdf">📄 Exportar PDF</button>
-            </div>
-            <div id="standingsContainer"></div>
         </section>
     </div>
 
