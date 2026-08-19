@@ -3,65 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏆 Gestor de Torneos</title>
+    <title>🏆 Gestor de Torneos Profesional</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Librería para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>🏆 Gestor de Torneos</h1>
-            <p>Sistema simple para organizar competiciones</p>
+        <header class="main-header">
+            <h1>🏆 Gestor de Torneos Profesional</h1>
+            <p>Sistema completo para organizar competiciones deportivas</p>
         </header>
 
         <!-- Configuración -->
         <section class="config-section">
-            <h2>⚙️ Configuración</h2>
+            <h2>⚙️ Configuración del Torneo</h2>
             
-            <div class="form-group">
-                <label>Deporte:</label>
-                <select id="sportSelect">
-                    <option value="football">⚽ Fútbol</option>
-                    <option value="basketball">🏀 Baloncesto</option>
-                    <option value="tennis">🎾 Tenis</option>
-                    <option value="chess">♟️ Ajedrez</option>
-                    <option value="esports">🎮 eSports</option>
-                </select>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Deporte:</label>
+                    <select id="sportSelect">
+                        <option value="football">⚽ Fútbol</option>
+                        <option value="basketball">🏀 Baloncesto</option>
+                        <option value="tennis">🎾 Tenis</option>
+                        <option value="chess">♟️ Ajedrez</option>
+                        <option value="esports">🎮 eSports</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Sistema de Competición:</label>
+                    <select id="formatSelect">
+                        <option value="single">Eliminación Simple</option>
+                        <option value="double">Doble Eliminación</option>
+                        <option value="roundRobin">Round-Robin (Todos vs Todos)</option>
+                        <option value="swiss">Sistema Suizo</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Número de Grupos:</label>
+                    <select id="numGroups">
+                        <option value="1">1 Grupo</option>
+                        <option value="2">2 Grupos</option>
+                        <option value="3">3 Grupos</option>
+                        <option value="4" selected>4 Grupos</option>
+                        <option value="5">5 Grupos</option>
+                        <option value="6">6 Grupos</option>
+                        <option value="8">8 Grupos</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Canchas/Escenarios:</label>
+                    <select id="numVenues">
+                        <option value="1">1 Cancha</option>
+                        <option value="2">2 Canchas</option>
+                        <option value="3" selected>3 Canchas</option>
+                        <option value="4">4 Canchas</option>
+                    </select>
+                </div>
             </div>
 
             <div class="form-group">
-                <label>Sistema de Competición:</label>
-                <select id="formatSelect">
-                    <option value="single">Eliminación Simple</option>
-                    <option value="double">Doble Eliminación</option>
-                    <option value="roundRobin">Round-Robin (Todos vs Todos)</option>
-                    <option value="swiss">Sistema Suizo</option>
-                </select>
+                <label>Participantes (uno por línea):</label>
+                <textarea id="participantsList" rows="8" placeholder="Equipo 1&#10;Equipo 2&#10;Equipo 3&#10;Equipo 4&#10;Equipo 5&#10;Equipo 6&#10;Equipo 7&#10;Equipo 8"></textarea>
             </div>
 
-            <div class="form-group">
-                <label>Número de Participantes:</label>
-                <input type="number" id="numParticipants" min="4" max="64" value="8">
+            <div class="button-group">
+                <button onclick="generateTournament()" class="btn-primary">
+                    🎲 Generar Torneo
+                </button>
+                <button onclick="loadExample()" class="btn-secondary">
+                    📋 Cargar Ejemplo
+                </button>
+                <button onclick="saveTournament()" class="btn-secondary">
+                    💾 Guardar
+                </button>
             </div>
+        </section>
 
-            <div class="form-group">
-                <label>Nombres de Participantes (uno por línea):</label>
-                <textarea id="participantsList" rows="6" placeholder="Equipo 1&#10;Equipo 2&#10;Equipo 3&#10;Equipo 4&#10;Equipo 5&#10;Equipo 6&#10;Equipo 7&#10;Equipo 8"></textarea>
-            </div>
+        <!-- Resumen del Torneo -->
+        <section id="summarySection" class="hidden">
+            <h2>📊 Resumen del Torneo</h2>
+            <div id="summaryContainer"></div>
+        </section>
 
-            <button onclick="generateTournament()" class="btn-primary">
-                🎲 Generar Torneo
-            </button>
+        <!-- Grupos -->
+        <section id="groupsSection" class="hidden">
+            <h2>👥 Grupos</h2>
+            <div id="groupsContainer"></div>
         </section>
 
         <!-- Bracket Display -->
         <section id="bracketSection" class="hidden">
-            <h2>📊 Llaves del Torneo</h2>
+            <div class="section-header">
+                <h2>📊 Llaves del Torneo</h2>
+                <button onclick="exportPDF('bracket')" class="btn-pdf">📄 Exportar PDF</button>
+            </div>
             <div id="bracketContainer"></div>
+        </section>
+
+        <!-- Partidos -->
+        <section id="matchesSection" class="hidden">
+            <div class="section-header">
+                <h2>📅 Partidos Programados</h2>
+                <button onclick="exportPDF('matches')" class="btn-pdf">📄 Exportar PDF</button>
+            </div>
+            <div id="matchesContainer"></div>
         </section>
 
         <!-- Clasificación -->
         <section id="standingsSection" class="hidden">
-            <h2>📈 Clasificación</h2>
+            <div class="section-header">
+                <h2>📈 Clasificación Final</h2>
+                <button onclick="exportPDF('standings')" class="btn-pdf">📄 Exportar PDF</button>
+            </div>
             <div id="standingsContainer"></div>
         </section>
     </div>
