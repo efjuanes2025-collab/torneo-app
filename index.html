@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- Van dentro del <head> -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-</head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏆 Gestor de Torneos</title>
+    <title>🏆 Gestor de Torneos - v4.0</title>
     
-    <!-- LIBRERÍAS (se cargan automáticamente desde internet) -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- Librerías -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: Arial, sans-serif;
-            background: #f5f5f5;
+            background: #f0f2f5;
             padding: 20px;
-            margin: 0;
         }
         
         .container {
@@ -37,13 +37,33 @@
         
         .card {
             background: white;
-            padding: 20px;
+            padding: 25px;
             border-radius: 10px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
-        button {
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .btn {
             padding: 12px 24px;
             border: none;
             border-radius: 8px;
@@ -51,6 +71,7 @@
             font-weight: bold;
             cursor: pointer;
             margin: 5px;
+            transition: all 0.3s;
         }
         
         .btn-primary {
@@ -60,6 +81,7 @@
         
         .btn-primary:hover {
             background: #4338ca;
+            transform: translateY(-2px);
         }
         
         .btn-secondary {
@@ -67,123 +89,249 @@
             color: #4f46e5;
         }
         
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
+        .btn-pdf {
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        .btn-pdf:hover {
+            background: #dc2626;
         }
         
         .hidden {
             display: none;
         }
         
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
         .match-card {
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
             background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .venue-badge {
+            display: inline-block;
+            background: #4f46e5;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .group-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        
+        .team-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+        }
+        
+        .team-name {
+            flex: 1;
+            font-weight: 600;
         }
         
         .score-input {
-            width: 60px;
+            width: 55px;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
             text-align: center;
             font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .winner-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .rest-info {
+            background: #fef3c7;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 14px;
+            border-left: 4px solid #f59e0b;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
+            background: white;
+            margin-bottom: 20px;
         }
         
         th {
             background: #4f46e5;
             color: white;
-            padding: 10px;
+            padding: 12px;
+            text-align: left;
         }
         
         td {
             padding: 10px;
             border-bottom: 1px solid #ddd;
         }
+        
+        .colors-0 { background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
+        .colors-1 { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+        .colors-2 { background: linear-gradient(135deg, #e9d5ff, #d8b4fe); }
+        .colors-3 { background: linear-gradient(135deg, #fce7f3, #fbcfe8); }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border-left: 4px solid #10b981;
+        }
+        
+        .pdf-export {
+            text-align: center;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏆 Gestor de Torneos</h1>
-            <p>Versión Simple y Funcional</p>
+            <h1>🏆 Gestor de Torneos Profesional</h1>
+            <p>Rotación equitativa de canchas y control de descansos</p>
         </div>
+        
+        <div id="notification" class="notification hidden"></div>
         
         <!-- CONFIGURACIÓN -->
         <div class="card">
             <h2>⚙️ Configuración</h2>
             
-            <label>Número de equipos:</label>
-            <input type="number" id="numTeams" value="8" min="2" max="32" onchange="createTeamInputs()">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                <div class="form-group">
+                    <label>Número de equipos:</label>
+                    <input type="number" id="numTeams" value="12" min="2" max="32" onchange="createTeamInputs()">
+                </div>
+                
+                <div class="form-group">
+                    <label>Número de grupos:</label>
+                    <input type="number" id="numGroups" value="3" min="1" max="8">
+                </div>
+                
+                <div class="form-group">
+                    <label>Número de canchas:</label>
+                    <input type="number" id="numVenues" value="3" min="1" max="10">
+                </div>
+            </div>
             
-            <label>Número de grupos:</label>
-            <input type="number" id="numGroups" value="2" min="1" max="8">
+            <div class="form-group">
+                <label>Equipos:</label>
+                <div id="teamsContainer"></div>
+            </div>
             
-            <label>Número de canchas:</label>
-            <input type="number" id="numVenues" value="3" min="1" max="10">
-            
-            <label>Equipos:</label>
-            <div id="teamsContainer"></div>
-            
-            <div style="margin-top: 20px;">
-                <button class="btn-primary" onclick="generateTournament()">🎲 Generar Torneo</button>
-                <button class="btn-secondary" onclick="loadExample()">📋 Cargar Ejemplo</button>
+            <div>
+                <button class="btn btn-primary" onclick="generateTournament()">🎲 Generar Torneo</button>
+                <button class="btn btn-secondary" onclick="loadExample()">📋 Cargar Ejemplo</button>
+                <button class="btn btn-secondary" onclick="saveData()">💾 Guardar</button>
+                <button class="btn btn-secondary" onclick="loadData()">📂 Cargar</button>
             </div>
         </div>
         
-        <!-- GRUPOS -->
+        <!-- FASE DE GRUPOS -->
         <div id="groupsSection" class="card hidden">
-            <h2>👥 Grupos</h2>
+            <div class="section-header">
+                <h2>👥 Fase de Grupos</h2>
+                <button class="btn btn-pdf" onclick="exportPDF('groups')">📄 Exportar PDF</button>
+            </div>
             <div id="groupsContainer"></div>
         </div>
         
         <!-- PARTIDOS -->
         <div id="matchesSection" class="card hidden">
-            <h2>📅 Partidos Programados</h2>
+            <div class="section-header">
+                <h2>📅 Partidos Programados</h2>
+                <button class="btn btn-pdf" onclick="exportPDF('matches')">📄 Exportar PDF</button>
+            </div>
+            <div id="restInfoContainer"></div>
             <div id="matchesContainer"></div>
         </div>
         
         <!-- TABLAS -->
         <div id="standingsSection" class="card hidden">
-            <h2>📊 Tablas de Posiciones</h2>
+            <div class="section-header">
+                <h2>📊 Tablas de Posiciones</h2>
+                <button class="btn btn-pdf" onclick="exportPDF('standings')">📄 Exportar PDF</button>
+            </div>
             <div id="standingsContainer"></div>
+        </div>
+        
+        <!-- ELIMINATORIAS -->
+        <div id="knockoutSection" class="card hidden">
+            <div class="section-header">
+                <h2>🏆 Eliminatorias</h2>
+                <button class="btn btn-pdf" onclick="exportPDF('knockout')">📄 Exportar PDF</button>
+            </div>
+            <div id="bracketContainer"></div>
         </div>
     </div>
     
     <script>
-        // ============ VARIABLES ============
+        // ============ VARIABLES GLOBALES ============
         let teams = [];
         let groups = [];
         let matches = [];
+        let knockoutBrackets = [];
         let standings = {};
-        let numTeams = 8;
-        let numGroups = 2;
+        let numTeams = 12;
+        let numGroups = 3;
         let numVenues = 3;
         
-        // ============ INICIALIZAR ============
+        // ============ INICIALIZACIÓN ============
         window.onload = function() {
-            console.log('Sistema cargado correctamente');
+            console.log('Sistema iniciado correctamente');
             loadExample();
         };
         
-        // ============ CREAR INPUTS DE EQUIPOS ============
+        // ============ CREAR INPUTS ============
         function createTeamInputs() {
-            numTeams = parseInt(document.getElementById('numTeams').value) || 8;
+            numTeams = parseInt(document.getElementById('numTeams').value) || 12;
             const container = document.getElementById('teamsContainer');
             container.innerHTML = '';
             
             const defaultNames = [
                 'Argentina', 'Brasil', 'Francia', 'Alemania',
-                'España', 'Inglaterra', 'Portugal', 'Holanda'
+                'España', 'Inglaterra', 'Portugal', 'Holanda',
+                'Italia', 'Bélgica', 'Uruguay', 'Colombia',
+                'México', 'Japón', 'Croacia', 'Senegal'
             ];
             
             for (let i = 0; i < numTeams; i++) {
@@ -198,18 +346,17 @@
         
         // ============ CARGAR EJEMPLO ============
         function loadExample() {
-            document.getElementById('numTeams').value = 8;
-            document.getElementById('numGroups').value = 2;
+            document.getElementById('numTeams').value = 12;
+            document.getElementById('numGroups').value = 3;
             document.getElementById('numVenues').value = 3;
             createTeamInputs();
-            console.log('Ejemplo cargado: 8 equipos');
+            showNotification('📋 Ejemplo cargado: 12 equipos, 3 grupos, 3 canchas');
         }
         
         // ============ GENERAR TORNEO ============
         function generateTournament() {
             console.log('=== GENERANDO TORNEO ===');
             
-            // Obtener configuración
             numTeams = parseInt(document.getElementById('numTeams').value);
             numGroups = parseInt(document.getElementById('numGroups').value);
             numVenues = parseInt(document.getElementById('numVenues').value);
@@ -223,8 +370,6 @@
                 }
             }
             
-            console.log('Equipos:', teams);
-            
             if (teams.length < 2) {
                 alert('Necesitas al menos 2 equipos');
                 return;
@@ -233,31 +378,35 @@
             // Distribuir en grupos
             distributeGroups();
             
-            // Generar partidos
-            generateMatches();
+            // Generar partidos con rotación de canchas
+            generateMatchesWithRotation();
+            
+            // Generar eliminatorias
+            generateKnockoutBrackets();
             
             // Mostrar secciones
             document.getElementById('groupsSection').classList.remove('hidden');
             document.getElementById('matchesSection').classList.remove('hidden');
             document.getElementById('standingsSection').classList.remove('hidden');
+            document.getElementById('knockoutSection').classList.remove('hidden');
             
             // Renderizar
             renderGroups();
             renderMatches();
             renderStandings();
+            renderBrackets();
+            renderRestInfo();
             
-            console.log('=== TORNEO GENERADO ===');
+            showNotification('✅ Torneo generado con rotación equitativa');
         }
         
-        // ============ DISTRIBUIR GRUPOS ============
+        // ============ DISTRIBUIR EN GRUPOS ============
         function distributeGroups() {
             groups = [];
             standings = {};
             
-            // Barajar equipos
             const shuffled = [...teams].sort(() => Math.random() - 0.5);
             
-            // Crear grupos
             for (let i = 0; i < numGroups; i++) {
                 groups.push({
                     id: i,
@@ -266,26 +415,25 @@
                 });
             }
             
-            // Asignar equipos
             shuffled.forEach((team, index) => {
                 const groupIndex = index % numGroups;
                 groups[groupIndex].teams.push(team);
             });
             
-            // Inicializar standings
             groups.forEach(group => {
                 standings[group.id] = {};
                 group.teams.forEach(team => {
                     standings[group.id][team] = {
                         points: 0, played: 0, wins: 0, draws: 0, losses: 0,
-                        goalsFor: 0, goalsAgainst: 0, goalDiff: 0
+                        goalsFor: 0, goalsAgainst: 0, goalDiff: 0,
+                        lastRoundPlayed: 0
                     };
                 });
             });
         }
         
-        // ============ GENERAR PARTIDOS (SIN CONFLICTOS DE CANCHAS) ============
-        function generateMatches() {
+        // ============ GENERAR PARTIDOS CON ROTACIÓN DE CANCHAS ============
+        function generateMatchesWithRotation() {
             matches = [];
             let matchId = 1;
             let roundNumber = 1;
@@ -308,39 +456,64 @@
                 }
             });
             
-            console.log('Total partidos a programar:', allMatches.length);
+            console.log('Total partidos:', allMatches.length);
             
-            // Programar por rondas
+            // Programar por rondas con rotación de canchas
             const remaining = [...allMatches];
+            let venueCounter = 0;
             
             while (remaining.length > 0) {
-                const teamsPlaying = new Set();
+                const teamsPlayingThisRound = new Set();
                 const matchesThisRound = [];
                 const toRemove = [];
                 
-                // Seleccionar partidos sin conflicto
+                // Intentar tomar partidos de diferentes grupos
                 for (let i = 0; i < remaining.length; i++) {
                     const match = remaining[i];
                     
-                    if (!teamsPlaying.has(match.team1) && 
-                        !teamsPlaying.has(match.team2) && 
+                    if (!teamsPlayingThisRound.has(match.team1) && 
+                        !teamsPlayingThisRound.has(match.team2) && 
                         matchesThisRound.length < numVenues) {
                         
-                        matchesThisRound.push(match);
-                        teamsPlaying.add(match.team1);
-                        teamsPlaying.add(match.team2);
-                        toRemove.push(i);
+                        // Verificar que no haya otro partido del mismo grupo en esta ronda
+                        const groupAlreadyPlaying = matchesThisRound.some(m => m.groupId === match.groupId);
+                        
+                        if (!groupAlreadyPlaying) {
+                            matchesThisRound.push(match);
+                            teamsPlayingThisRound.add(match.team1);
+                            teamsPlayingThisRound.add(match.team2);
+                            toRemove.push(i);
+                        }
                     }
                 }
                 
-                // Si no se pudo programar ningún partido, forzar el primero
+                // Si quedan canchas libres, permitir partidos de grupos ya usados
+                if (matchesThisRound.length < numVenues) {
+                    for (let i = 0; i < remaining.length; i++) {
+                        const match = remaining[i];
+                        
+                        if (!teamsPlayingThisRound.has(match.team1) && 
+                            !teamsPlayingThisRound.has(match.team2) && 
+                            matchesThisRound.length < numVenues &&
+                            !toRemove.includes(i)) {
+                            
+                            matchesThisRound.push(match);
+                            teamsPlayingThisRound.add(match.team1);
+                            teamsPlayingThisRound.add(match.team2);
+                            toRemove.push(i);
+                        }
+                    }
+                }
+                
+                // Si aún no hay partidos, forzar el primero
                 if (matchesThisRound.length === 0 && remaining.length > 0) {
                     matchesThisRound.push(remaining[0]);
                     toRemove.push(0);
                 }
                 
-                // Asignar canchas
+                // Asignar canchas con rotación equitativa
                 matchesThisRound.forEach((match, index) => {
+                    const venueIndex = (venueCounter + index) % numVenues;
                     matches.push({
                         id: matchId,
                         groupId: match.groupId,
@@ -351,11 +524,14 @@
                         score1: null,
                         score2: null,
                         winner: null,
-                        venue: 'Cancha ' + (index + 1),
+                        venue: 'Cancha ' + (venueIndex + 1),
+                        venueIndex: venueIndex,
                         status: 'pending'
                     });
                     matchId++;
                 });
+                
+                venueCounter++;
                 
                 // Eliminar partidos programados
                 toRemove.sort((a, b) => b - a);
@@ -366,31 +542,118 @@
                 roundNumber++;
             }
             
-            console.log('Partidos programados:', matches);
+            console.log('Partidos con rotación:', matches);
             console.log('Total rondas:', roundNumber - 1);
+        }
+        
+        // ============ GENERAR ELIMINATORIAS ============
+        function generateKnockoutBrackets() {
+            knockoutBrackets = [];
+            
+            const qualifiedCount = numGroups * 2;
+            const numRounds = Math.log2(qualifiedCount);
+            
+            let matchId = matches.length + 1;
+            
+            const roundNames = {
+                1: 'Cuartos de Final',
+                2: 'Semifinales',
+                3: 'Final'
+            };
+            
+            for (let round = 1; round <= numRounds; round++) {
+                const matchesInRound = qualifiedCount / Math.pow(2, round);
+                const roundMatches = [];
+                
+                for (let i = 0; i < matchesInRound; i++) {
+                    roundMatches.push({
+                        id: matchId,
+                        round: round,
+                        roundName: roundNames[round] || ('Ronda ' + round),
+                        team1: null,
+                        team2: null,
+                        score1: null,
+                        score2: null,
+                        winner: null,
+                        venue: 'Cancha ' + (i % numVenues + 1),
+                        status: 'pending'
+                    });
+                    matchId++;
+                }
+                
+                knockoutBrackets.push(roundMatches);
+            }
+        }
+        
+        // ============ RENDERIZAR INFORMACIÓN DE DESCANSOS ============
+        function renderRestInfo() {
+            const container = document.getElementById('restInfoContainer');
+            
+            // Calcular descanso promedio
+            const teamLastRound = {};
+            
+            matches.forEach(match => {
+                [match.team1, match.team2].forEach(team => {
+                    if (!teamLastRound[team]) {
+                        teamLastRound[team] = [];
+                    }
+                    teamLastRound[team].push(match.round);
+                });
+            });
+            
+            let totalGaps = 0;
+            let totalTeams = 0;
+            
+            Object.keys(teamLastRound).forEach(team => {
+                const rounds = teamLastRound[team].sort((a, b) => a - b);
+                let totalGap = 0;
+                
+                for (let i = 1; i < rounds.length; i++) {
+                    totalGap += rounds[i] - rounds[i - 1];
+                }
+                
+                if (rounds.length > 1) {
+                    totalGaps += totalGap / (rounds.length - 1);
+                    totalTeams++;
+                }
+            });
+            
+            const avgRest = totalTeams > 0 ? (totalGaps / totalTeams).toFixed(1) : 0;
+            
+            container.innerHTML = `
+                <div class="rest-info">
+                    ⏱️ <strong>Análisis de Descansos:</strong> 
+                    Cada equipo espera en promedio <strong>${avgRest} ronda(s)</strong> entre partidos.
+                    ${avgRest > 1.5 ? '⚠️ Tiempo de descanso aceptable' : '✅ Descanso optimizado'}
+                </div>
+            `;
         }
         
         // ============ RENDERIZAR GRUPOS ============
         function renderGroups() {
             const container = document.getElementById('groupsContainer');
-            container.innerHTML = '';
+            container.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">';
             
-            const colors = ['#dbeafe', '#d1fae5', '#e9d5ff', '#fce7f3'];
+            const colors = ['colors-0', 'colors-1', 'colors-2', 'colors-3'];
             
             groups.forEach((group, index) => {
                 container.innerHTML += `
-                    <div style="background: white; border-radius: 10px; padding: 15px; margin: 10px 0;">
-                        <h3 style="background: ${colors[index]}; padding: 10px; border-radius: 5px;">
+                    <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div class="${colors[index % colors.length]}" style="padding: 15px; font-weight: bold; text-align: center;">
                             ${group.name}
-                        </h3>
-                        ${group.teams.map(team => `
-                            <div style="padding: 8px; border-bottom: 1px solid #eee;">
-                                ${team}
-                            </div>
-                        `).join('')}
+                        </div>
+                        <div style="padding: 15px;">
+                            ${group.teams.map(team => `
+                                <div style="padding: 8px; border-bottom: 1px solid #f0f0f0;">
+                                    ${team}
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
                 `;
             });
+            
+            container.innerHTML += '</div>';
         }
         
         // ============ RENDERIZAR PARTIDOS ============
@@ -398,7 +661,6 @@
             const container = document.getElementById('matchesContainer');
             container.innerHTML = '';
             
-            // Agrupar por rondas
             const rounds = {};
             matches.forEach(match => {
                 if (!rounds[match.round]) rounds[match.round] = [];
@@ -408,31 +670,30 @@
             Object.keys(rounds).sort((a, b) => a - b).forEach(round => {
                 container.innerHTML += `
                     <div style="margin: 20px 0;">
-                        <h3 style="background: #4f46e5; color: white; padding: 10px; border-radius: 5px;">
-                            📅 Ronda ${round} (${rounds[round].length} partidos simultáneos)
-                        </h3>
+                        <div style="background: #4f46e5; color: white; padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; font-weight: bold;">
+                            📅 Ronda ${round} - ${rounds[round].length} partido(s) simultáneo(s)
+                        </div>
                 `;
                 
                 rounds[round].forEach(match => {
+                    const groupIndex = groups.findIndex(g => g.id === match.groupId);
                     container.innerHTML += `
                         <div class="match-card">
-                            <span style="background: #4f46e5; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
-                                🏟️ ${match.venue}
-                            </span>
-                            <small style="display: block; color: #666;">${match.groupName}</small>
-                            <div style="margin: 8px 0;">
-                                <span>${match.team1}</span>
+                            <span class="venue-badge">🏟️ ${match.venue}</span>
+                            <span class="group-badge ${['colors-0', 'colors-1', 'colors-2'][groupIndex]}">${match.groupName}</span>
+                            <div class="team-row">
+                                <span class="team-name">${match.team1}</span>
                                 <input type="number" class="score-input" placeholder="0" 
                                        value="${match.score1 ?? ''}"
                                        onchange="updateScore(${match.id}, 1, this.value)">
                             </div>
-                            <div style="margin: 8px 0;">
-                                <span>${match.team2}</span>
+                            <div class="team-row">
+                                <span class="team-name">${match.team2}</span>
                                 <input type="number" class="score-input" placeholder="0" 
                                        value="${match.score2 ?? ''}"
                                        onchange="updateScore(${match.id}, 2, this.value)">
                             </div>
-                            ${match.winner ? `<strong style="color: green;">✅ ${match.winner}</strong>` : ''}
+                            ${match.winner ? `<span class="winner-badge">✅ ${match.winner}</span>` : ''}
                         </div>
                     `;
                 });
@@ -463,10 +724,13 @@
                 match.status = 'completed';
                 
                 updateStandings(match);
+                checkAndPopulateKnockout();
             }
             
             renderMatches();
             renderStandings();
+            renderBrackets();
+            renderRestInfo();
         }
         
         // ============ ACTUALIZAR TABLA ============
@@ -482,6 +746,7 @@
                 stats.goalsFor += gf;
                 stats.goalsAgainst += ga;
                 stats.goalDiff = stats.goalsFor - stats.goalsAgainst;
+                stats.lastRoundPlayed = match.round;
                 
                 if (result === 'win') {
                     stats.wins++;
@@ -517,10 +782,10 @@
                 
                 const sortedTeams = Object.entries(groupStandings)
                     .map(([name, stats]) => ({ name, ...stats }))
-                    .sort((a, b) => b.points - a.points || b.goalDiff - a.goalDiff);
+                    .sort((a, b) => b.points - a.points || b.goalDiff - a.goalDiff || b.goalsFor - a.goalsFor);
                 
                 container.innerHTML += `
-                    <h3>${group.name}</h3>
+                    <h3 style="margin: 15px 0 10px 0;">${group.name}</h3>
                     <table>
                         <thead>
                             <tr>
@@ -553,9 +818,227 @@
                             `).join('')}
                         </tbody>
                     </table>
-                    <br>
                 `;
             });
+        }
+        
+        // ============ VERIFICAR ELIMINATORIAS ============
+        function checkAndPopulateKnockout() {
+            const allCompleted = matches.every(m => m.status === 'completed');
+            
+            if (allCompleted && knockoutBrackets.length > 0) {
+                const qualified = [];
+                
+                groups.forEach(group => {
+                    const groupStandings = standings[group.id];
+                    if (!groupStandings) return;
+                    
+                    const sortedTeams = Object.entries(groupStandings)
+                        .map(([name, stats]) => ({ name, ...stats }))
+                        .sort((a, b) => b.points - a.points);
+                    
+                    if (sortedTeams.length >= 2) {
+                        qualified.push(sortedTeams[0].name);
+                        qualified.push(sortedTeams[1].name);
+                    }
+                });
+                
+                const firstRound = knockoutBrackets[0];
+                firstRound.forEach((match, index) => {
+                    if (index * 2 < qualified.length) {
+                        match.team1 = qualified[index * 2] || 'TBD';
+                        match.team2 = qualified[index * 2 + 1] || 'TBD';
+                        match.status = 'ready';
+                    }
+                });
+            }
+        }
+        
+        // ============ RENDERIZAR ELIMINATORIAS ============
+        function renderBrackets() {
+            const container = document.getElementById('bracketContainer');
+            container.innerHTML = '';
+            
+            knockoutBrackets.forEach((round, index) => {
+                container.innerHTML += `
+                    <div style="margin-bottom: 20px;">
+                        <div style="background: #4f46e5; color: white; padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; font-weight: bold;">
+                            ${round[0]?.roundName || 'Ronda ' + (index + 1)}
+                        </div>
+                `;
+                
+                round.forEach(match => {
+                    container.innerHTML += `
+                        <div class="match-card">
+                            <span class="venue-badge">🏟️ ${match.venue}</span>
+                            <div class="team-row">
+                                <span class="team-name">${match.team1 || 'Por definir'}</span>
+                                <input type="number" class="score-input" placeholder="0" 
+                                       value="${match.score1 ?? ''}"
+                                       onchange="updateKnockoutScore(${match.id}, 1, this.value)">
+                            </div>
+                            <div class="team-row">
+                                <span class="team-name">${match.team2 || 'Por definir'}</span>
+                                <input type="number" class="score-input" placeholder="0" 
+                                       value="${match.score2 ?? ''}"
+                                       onchange="updateKnockoutScore(${match.id}, 2, this.value)">
+                            </div>
+                            ${match.winner ? `<span class="winner-badge">✅ ${match.winner}</span>` : ''}
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML += '</div>';
+            });
+        }
+        
+        // ============ ACTUALIZAR MARCADOR ELIMINATORIA ============
+        function updateKnockoutScore(matchId, teamNumber, score) {
+            let match = null;
+            let roundIndex = -1;
+            let matchIndex = -1;
+            
+            knockoutBrackets.forEach((round, rIdx) => {
+                round.forEach((m, mIdx) => {
+                    if (m.id === matchId) {
+                        match = m;
+                        roundIndex = rIdx;
+                        matchIndex = mIdx;
+                    }
+                });
+            });
+            
+            if (!match) return;
+            
+            if (teamNumber === 1) {
+                match.score1 = parseInt(score) || 0;
+            } else {
+                match.score2 = parseInt(score) || 0;
+            }
+            
+            if (match.score1 !== null && match.score2 !== null && match.team1 && match.team2) {
+                if (match.score1 > match.score2) {
+                    match.winner = match.team1;
+                } else if (match.score2 > match.score1) {
+                    match.winner = match.team2;
+                }
+                match.status = 'completed';
+                
+                if (roundIndex + 1 < knockoutBrackets.length) {
+                    const nextRound = knockoutBrackets[roundIndex + 1];
+                    const nextMatchIndex = Math.floor(matchIndex / 2);
+                    
+                    if (nextRound[nextMatchIndex]) {
+                        if (matchIndex % 2 === 0) {
+                            nextRound[nextMatchIndex].team1 = match.winner;
+                        } else {
+                            nextRound[nextMatchIndex].team2 = match.winner;
+                        }
+                    }
+                } else {
+                    showNotification('🏆 ¡' + match.winner + ' es el Campeón!');
+                }
+            }
+            
+            renderBrackets();
+        }
+        
+        // ============ EXPORTAR PDF ============
+        function exportPDF(section) {
+            let element = null;
+            let filename = '';
+            
+            switch(section) {
+                case 'groups':
+                    element = document.getElementById('groupsContainer');
+                    filename = 'fase-grupos.pdf';
+                    break;
+                case 'matches':
+                    element = document.getElementById('matchesContainer');
+                    filename = 'partidos-programados.pdf';
+                    break;
+                case 'standings':
+                    element = document.getElementById('standingsContainer');
+                    filename = 'tablas-posiciones.pdf';
+                    break;
+                case 'knockout':
+                    element = document.getElementById('bracketContainer');
+                    filename = 'eliminatorias.pdf';
+                    break;
+            }
+            
+            if (element && typeof html2pdf !== 'undefined') {
+                html2pdf().from(element).save(filename);
+                showNotification('📄 PDF exportado: ' + filename);
+            } else {
+                showNotification('Error: Librería PDF no disponible', 'error');
+            }
+        }
+        
+        // ============ NOTIFICACIONES ============
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification';
+            notification.style.borderLeftColor = type === 'error' ? '#ef4444' : '#10b981';
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // ============ GUARDAR ============
+        function saveData() {
+            const data = {
+                teams, groups, matches, knockoutBrackets, standings,
+                numTeams, numGroups, numVenues
+            };
+            localStorage.setItem('torneoDataV4', JSON.stringify(data));
+            showNotification('💾 Datos guardados');
+        }
+        
+        // ============ CARGAR ============
+        function loadData() {
+            const saved = localStorage.getItem('torneoDataV4');
+            
+            if (saved) {
+                const data = JSON.parse(saved);
+                teams = data.teams || [];
+                groups = data.groups || [];
+                matches = data.matches || [];
+                knockoutBrackets = data.knockoutBrackets || [];
+                standings = data.standings || {};
+                numTeams = data.numTeams || 12;
+                numGroups = data.numGroups || 3;
+                numVenues = data.numVenues || 3;
+                
+                document.getElementById('numTeams').value = numTeams;
+                document.getElementById('numGroups').value = numGroups;
+                document.getElementById('numVenues').value = numVenues;
+                
+                createTeamInputs();
+                
+                teams.forEach((team, index) => {
+                    const input = document.getElementById('team_' + index);
+                    if (input) input.value = team;
+                });
+                
+                document.getElementById('groupsSection').classList.remove('hidden');
+                document.getElementById('matchesSection').classList.remove('hidden');
+                document.getElementById('standingsSection').classList.remove('hidden');
+                document.getElementById('knockoutSection').classList.remove('hidden');
+                
+                renderGroups();
+                renderMatches();
+                renderStandings();
+                renderBrackets();
+                renderRestInfo();
+                
+                showNotification('📂 Datos cargados');
+            } else {
+                showNotification('No hay datos guardados', 'error');
+            }
         }
     </script>
 </body>
