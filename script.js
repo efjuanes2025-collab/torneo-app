@@ -6,7 +6,8 @@ let knockoutBrackets = [];
 let standings = {};
 let numTeams = 8;
 let numGroups = 2;
-let numVenues = 2;
+let numVenues = 3;
+let currentPhase = 'config'; // config, groups, knockout, finished
 
 // ============ INICIALIZACIÓN ============
 document.addEventListener('DOMContentLoaded', function() {
@@ -14,17 +15,17 @@ document.addEventListener('DOMContentLoaded', function() {
     generateTeamInputs();
 });
 
-// ============ GENERAR INPUTS DE EQUIPOS ============
+// ============ GENERAR INPUTS ============
 function generateTeamInputs() {
     numTeams = parseInt(document.getElementById('numTeams').value) || 8;
     const container = document.getElementById('teamsInputContainer');
     container.innerHTML = '';
     
     const defaultNames = [
-        'Equipo 1', 'Equipo 2', 'Equipo 3', 'Equipo 4',
-        'Equipo 5', 'Equipo 6', 'Equipo 7', 'Equipo 8',
-        'Equipo 9', 'Equipo 10', 'Equipo 11', 'Equipo 12',
-        'Equipo 13', 'Equipo 14', 'Equipo 15', 'Equipo 16'
+        'Argentina', 'Brasil', 'Francia', 'Alemania',
+        'España', 'Inglaterra', 'Portugal', 'Holanda',
+        'Italia', 'Bélgica', 'Uruguay', 'Croacia',
+        'México', 'Japón', 'Colombia', 'Senegal'
     ];
     
     for (let i = 0; i < numTeams; i++) {
@@ -32,7 +33,6 @@ function generateTeamInputs() {
         input.type = 'text';
         input.id = 'team_' + i;
         input.value = defaultNames[i] || ('Equipo ' + (i + 1));
-        input.style.marginBottom = '8px';
         input.placeholder = 'Nombre del equipo ' + (i + 1);
         container.appendChild(input);
     }
@@ -47,18 +47,16 @@ function loadExample() {
     
     document.getElementById('numTeams').value = 8;
     document.getElementById('numGroups').value = 2;
-    document.getElementById('numVenues').value = 2;
+    document.getElementById('numVenues').value = 3;
     
     generateTeamInputs();
     
     for (let i = 0; i < exampleTeams.length; i++) {
         const input = document.getElementById('team_' + i);
-        if (input) {
-            input.value = exampleTeams[i];
-        }
+        if (input) input.value = exampleTeams[i];
     }
     
-    showNotification('📋 Ejemplo cargado');
+    showNotification('📋 Ejemplo cargado: 8 equipos, 2 grupos, 3 canchas');
 }
 
 // ============ GENERAR TORNEO ============
@@ -82,28 +80,32 @@ function generateTournament() {
     numGroups = parseInt(document.getElementById('numGroups').value) || 1;
     numVenues = parseInt(document.getElementById('numVenues').value) || 1;
     
+    currentPhase = 'groups';
+    
     // Distribuir en grupos
     distributeToGroups();
     
-    // Generar partidos de grupos
+    // Generar partidos con programación inteligente
     generateGroupMatches();
     
     // Generar eliminatorias
     generateKnockoutBrackets();
     
     // Mostrar secciones
+    document.getElementById('phaseDiagramSection').classList.remove('hidden');
     document.getElementById('groupsSection').classList.remove('hidden');
     document.getElementById('matchesSection').classList.remove('hidden');
     document.getElementById('standingsSection').classList.remove('hidden');
     document.getElementById('knockoutSection').classList.remove('hidden');
     
     // Renderizar
+    renderPhaseDiagram();
     renderGroups();
     renderMatches();
     renderStandings();
     renderBrackets();
     
-    showNotification('✅ Torneo generado correctamente');
+    showNotification('✅ Torneo generado con programación inteligente');
 }
 
 // ============ DISTRIBUIR EN GRUPOS ============
@@ -111,10 +113,8 @@ function distributeToGroups() {
     groups = [];
     standings = {};
     
-    // Barajar equipos
     const shuffled = [...teams].sort(() => Math.random() - 0.5);
     
-    // Crear grupos
     for (let i = 0; i < numGroups; i++) {
         groups.push({
             id: i,
@@ -123,13 +123,11 @@ function distributeToGroups() {
         });
     }
     
-    // Asignar equipos
     shuffled.forEach((team, index) => {
         const groupIndex = index % numGroups;
         groups[groupIndex].teams.push(team);
     });
     
-    // Inicializar standings
     groups.forEach(group => {
         standings[group.id] = {};
         group.teams.forEach(team => {
@@ -141,46 +139,97 @@ function distributeToGroups() {
     });
 }
 
-// ============ GENERAR PARTIDOS DE GRUPOS ============
+// ============ GENERAR PARTIDOS CON PROGRAMACIÓN INTELIGENTE ============
 function generateGroupMatches() {
     groupMatches = [];
     let matchId = 1;
     
+    // Generar todos los partidos primero
+    const allMatches = [];
+    
     groups.forEach(group => {
         const teamsInGroup = group.teams;
         
-        // Todos contra todos
         for (let i = 0; i < teamsInGroup.length; i++) {
             for (let j = i + 1; j < teamsInGroup.length; j++) {
-                groupMatches.push({
-                    id: matchId,
+                allMatches.push({
                     groupId: group.id,
                     groupName: group.name,
                     team1: teamsInGroup[i],
-                    team2: teamsInGroup[j],
-                    score1: null,
-                    score2: null,
-                    winner: null,
-                    venue: 'Cancha ' + ((matchId - 1) % numVenues + 1),
-                    status: 'pending'
+                    team2: teamsInGroup[j]
                 });
-                matchId++;
             }
         }
     });
+    
+    // Programar partidos por rondas sin conflictos
+    let round = 1;
+    let remainingMatches = [...allMatches];
+    
+    while (remainingMatches.length > 0) {
+        const teamsPlayingThisRound = new Set();
+        const matchesThisRound = [];
+        const matchesToRemove = [];
+        
+        // Seleccionar partidos que no tengan conflicto de equipos
+        for (let i = 0; i < remainingMatches.length; i++) {
+            const match = remainingMatches[i];
+            
+            if (!teamsPlayingThisRound.has(match.team1) && 
+                !teamsPlayingThisRound.has(match.team2)) {
+                
+                // Verificar límite de canchas
+                if (matchesThisRound.length < numVenues) {
+                    matchesThisRound.push(match);
+                    teamsPlayingThisRound.add(match.team1);
+                    teamsPlayingThisRound.add(match.team2);
+                    matchesToRemove.push(i);
+                }
+            }
+        }
+        
+        // Asignar canchas a los partidos de esta ronda
+        matchesThisRound.forEach((match, index) => {
+            groupMatches.push({
+                id: matchId,
+                groupId: match.groupId,
+                groupName: match.groupName,
+                round: round,
+                team1: match.team1,
+                team2: match.team2,
+                score1: null,
+                score2: null,
+                winner: null,
+                venue: 'Cancha ' + (index + 1),
+                status: 'pending'
+            });
+            matchId++;
+        });
+        
+        // Eliminar partidos programados
+        matchesToRemove.sort((a, b) => b - a);
+        matchesToRemove.forEach(index => {
+            remainingMatches.splice(index, 1);
+        });
+        
+        round++;
+    }
 }
 
 // ============ GENERAR ELIMINATORIAS ============
 function generateKnockoutBrackets() {
     knockoutBrackets = [];
     
-    // Número de clasificados (2 por grupo)
     const qualifiedCount = numGroups * 2;
     const numRounds = Math.log2(qualifiedCount);
     
     let matchId = groupMatches.length + 1;
     
-    const roundNames = ['', 'Semifinales', 'Final'];
+    const roundNames = {
+        1: 'Cuartos de Final',
+        2: 'Semifinales',
+        3: 'Final'
+    };
     
     for (let round = 1; round <= numRounds; round++) {
         const matchesInRound = qualifiedCount / Math.pow(2, round);
@@ -196,7 +245,7 @@ function generateKnockoutBrackets() {
                 score1: null,
                 score2: null,
                 winner: null,
-                venue: 'Cancha ' + ((matchId - 1) % numVenues + 1),
+                venue: 'Cancha ' + (i % numVenues + 1),
                 status: 'pending'
             });
             matchId++;
@@ -206,19 +255,50 @@ function generateKnockoutBrackets() {
     }
 }
 
+// ============ RENDERIZAR DIAGRAMA DE FASES ============
+function renderPhaseDiagram() {
+    const container = document.getElementById('phaseDiagram');
+    container.innerHTML = '';
+    
+    const phases = [
+        { name: 'Configuración', detail: teams.length + ' equipos', status: 'completed' },
+        { name: 'Fase de Grupos', detail: numGroups + ' grupos', status: currentPhase === 'groups' ? 'active' : (currentPhase === 'knockout' || currentPhase === 'finished' ? 'completed' : '') },
+        { name: 'Eliminatorias', detail: (numGroups * 2) + ' clasificados', status: currentPhase === 'knockout' ? 'active' : (currentPhase === 'finished' ? 'completed' : '') },
+        { name: 'Campeón', detail: '1 ganador', status: currentPhase === 'finished' ? 'active' : '' }
+    ];
+    
+    phases.forEach((phase, index) => {
+        if (index > 0) {
+            container.innerHTML += '<div class="phase-arrow">→</div>';
+        }
+        
+        container.innerHTML += `
+            <div class="phase-box ${phase.status}">
+                <div class="phase-title">${phase.name}</div>
+                <div class="phase-detail">${phase.detail}</div>
+            </div>
+        `;
+    });
+}
+
 // ============ RENDERIZAR GRUPOS ============
 function renderGroups() {
     const container = document.getElementById('groupsContainer');
-    container.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">';
+    container.innerHTML = '<div class="groups-diagram">';
     
     groups.forEach((group, index) => {
         container.innerHTML += `
-            <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <div class="group-colors-${index % 8}" style="padding: 15px; font-weight: bold; text-align: center;">
+            <div class="group-box">
+                <div class="group-header colors-${index % 8}">
                     ${group.name}
                 </div>
-                <div style="padding: 15px;">
-                    ${group.teams.map(team => `<div style="padding: 8px; border-bottom: 1px solid #f0f0f0;">${team}</div>`).join('')}
+                <div class="group-teams">
+                    ${group.teams.map(team => `
+                        <div class="team-item">
+                            <span>${team}</span>
+                            <span style="font-size: 12px; color: #666;">${index + 1}</span>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         `;
@@ -232,39 +312,43 @@ function renderMatches() {
     const container = document.getElementById('matchesContainer');
     container.innerHTML = '';
     
-    groups.forEach((group, groupIndex) => {
-        const groupMatchList = groupMatches.filter(m => m.groupId === group.id);
+    // Agrupar por rondas
+    const rounds = {};
+    groupMatches.forEach(match => {
+        if (!rounds[match.round]) rounds[match.round] = [];
+        rounds[match.round].push(match);
+    });
+    
+    Object.keys(rounds).forEach(round => {
+        container.innerHTML += `
+            <div class="round-container">
+                <div class="round-header">📅 Ronda ${round} (Partidos simultáneos)</div>
+                <div class="matches-grid">
+        `;
         
-        if (groupMatchList.length > 0) {
+        rounds[round].forEach(match => {
             container.innerHTML += `
-                <h3 class="group-colors-${groupIndex % 8}" style="padding: 10px; margin: 20px 0 10px 0; border-radius: 5px;">
-                    ${group.name}
-                </h3>
-            `;
-            
-            groupMatchList.forEach(match => {
-                container.innerHTML += `
-                    <div class="match-card">
-                        <small style="color: #666;">🏟️ ${match.venue}</small>
-                        <div class="match-teams" style="margin-top: 10px;">
-                            <div class="team-row">
-                                <span class="team-name">${match.team1}</span>
-                                <input type="number" class="score-input" placeholder="0" 
-                                       value="${match.score1 ?? ''}"
-                                       onchange="updateMatchScore(${match.id}, 1, this.value)">
-                            </div>
-                            <div class="team-row">
-                                <span class="team-name">${match.team2}</span>
-                                <input type="number" class="score-input" placeholder="0" 
-                                       value="${match.score2 ?? ''}"
-                                       onchange="updateMatchScore(${match.id}, 2, this.value)">
-                            </div>
-                            ${match.winner ? `<div class="winner">✅ Ganador: ${match.winner}</div>` : ''}
-                        </div>
+                <div class="match-card">
+                    <span class="venue-badge">🏟️ ${match.venue}</span>
+                    <small style="display: block; color: #666; margin-bottom: 8px;">${match.groupName}</small>
+                    <div class="team-row">
+                        <span class="team-name">${match.team1}</span>
+                        <input type="number" class="score-input" placeholder="0" 
+                               value="${match.score1 ?? ''}"
+                               onchange="updateMatchScore(${match.id}, 1, this.value)">
                     </div>
-                `;
-            });
-        }
+                    <div class="team-row">
+                        <span class="team-name">${match.team2}</span>
+                        <input type="number" class="score-input" placeholder="0" 
+                               value="${match.score2 ?? ''}"
+                               onchange="updateMatchScore(${match.id}, 2, this.value)">
+                    </div>
+                    ${match.winner ? `<span class="winner-badge">✅ ${match.winner}</span>` : ''}
+                </div>
+            `;
+        });
+        
+        container.innerHTML += '</div></div>';
     });
 }
 
@@ -289,14 +373,10 @@ function updateMatchScore(matchId, teamNumber, score) {
         }
         match.status = 'completed';
         
-        // Actualizar standings
         updateStandings(match);
-        
-        // Verificar si todos los partidos están completos
         checkAndPopulateKnockout();
     }
     
-    // Re-renderizar
     renderMatches();
     renderStandings();
     renderBrackets();
@@ -353,7 +433,7 @@ function renderStandings() {
             .sort((a, b) => b.points - a.points || b.goalDiff - a.goalDiff || b.goalsFor - a.goalsFor);
         
         container.innerHTML += `
-            <h3 class="group-colors-${groupIndex % 8}" style="padding: 10px; margin: 20px 0 10px 0; border-radius: 5px;">
+            <h3 class="colors-${groupIndex % 8}" style="padding: 10px; margin: 20px 0 10px 0; border-radius: 5px;">
                 ${group.name}
             </h3>
             <table>
@@ -373,7 +453,7 @@ function renderStandings() {
                 </thead>
                 <tbody>
                     ${sortedTeams.map((team, idx) => `
-                        <tr>
+                        <tr class="position-${idx + 1}">
                             <td><strong>${idx + 1}</strong></td>
                             <td>${team.name}</td>
                             <td>${team.played}</td>
@@ -397,6 +477,8 @@ function checkAndPopulateKnockout() {
     const allCompleted = groupMatches.every(m => m.status === 'completed');
     
     if (allCompleted && knockoutBrackets.length > 0) {
+        currentPhase = 'knockout';
+        
         const qualified = [];
         
         groups.forEach(group => {
@@ -413,7 +495,6 @@ function checkAndPopulateKnockout() {
             }
         });
         
-        // Poblar primera ronda
         const firstRound = knockoutBrackets[0];
         firstRound.forEach((match, index) => {
             if (index * 2 < qualified.length) {
@@ -422,45 +503,47 @@ function checkAndPopulateKnockout() {
                 match.status = 'ready';
             }
         });
+        
+        renderPhaseDiagram();
     }
 }
 
 // ============ RENDERIZAR ELIMINATORIAS ============
 function renderBrackets() {
     const container = document.getElementById('bracketContainer');
-    container.innerHTML = '';
+    container.innerHTML = '<div class="bracket-diagram">';
     
-    knockoutBrackets.forEach(round => {
+    knockoutBrackets.forEach((round, index) => {
         container.innerHTML += `
-            <div class="bracket-round">
-                <div class="round-title">${round[0]?.roundName || 'Ronda'}</div>
+            <div class="bracket-column">
+                <div class="bracket-round-title">${round[0]?.roundName || 'Ronda ' + (index + 1)}</div>
         `;
         
         round.forEach(match => {
             container.innerHTML += `
-                <div class="match-card">
+                <div class="bracket-match">
                     <small style="color: #666;">🏟️ ${match.venue}</small>
-                    <div class="match-teams" style="margin-top: 10px;">
-                        <div class="team-row">
-                            <span class="team-name">${match.team1 || 'Por definir'}</span>
-                            <input type="number" class="score-input" placeholder="0" 
-                                   value="${match.score1 ?? ''}"
-                                   onchange="updateKnockoutScore(${match.id}, 1, this.value)">
-                        </div>
-                        <div class="team-row">
-                            <span class="team-name">${match.team2 || 'Por definir'}</span>
-                            <input type="number" class="score-input" placeholder="0" 
-                                   value="${match.score2 ?? ''}"
-                                   onchange="updateKnockoutScore(${match.id}, 2, this.value)">
-                        </div>
-                        ${match.winner ? `<div class="winner">✅ ${match.winner}</div>` : ''}
+                    <div class="team-row">
+                        <span class="team-name">${match.team1 || 'Por definir'}</span>
+                        <input type="number" class="score-input" placeholder="0" 
+                               value="${match.score1 ?? ''}"
+                               onchange="updateKnockoutScore(${match.id}, 1, this.value)">
                     </div>
+                    <div class="team-row">
+                        <span class="team-name">${match.team2 || 'Por definir'}</span>
+                        <input type="number" class="score-input" placeholder="0" 
+                               value="${match.score2 ?? ''}"
+                               onchange="updateKnockoutScore(${match.id}, 2, this.value)">
+                    </div>
+                    ${match.winner ? `<span class="winner-badge">✅ ${match.winner}</span>` : ''}
                 </div>
             `;
         });
         
         container.innerHTML += '</div>';
     });
+    
+    container.innerHTML += '</div>';
 }
 
 // ============ ACTUALIZAR MARCADOR ELIMINATORIA ============
@@ -495,7 +578,6 @@ function updateKnockoutScore(matchId, teamNumber, score) {
         }
         match.status = 'completed';
         
-        // Propagar a siguiente ronda
         if (roundIndex + 1 < knockoutBrackets.length) {
             const nextRound = knockoutBrackets[roundIndex + 1];
             const nextMatchIndex = Math.floor(matchIndex / 2);
@@ -508,7 +590,9 @@ function updateKnockoutScore(matchId, teamNumber, score) {
                 }
             }
         } else {
+            currentPhase = 'finished';
             showNotification('🏆 ¡' + match.winner + ' es el Campeón!');
+            renderPhaseDiagram();
         }
     }
     
@@ -531,14 +615,8 @@ function showNotification(message, type = 'success') {
 // ============ GUARDAR DATOS ============
 function saveData() {
     const data = {
-        teams: teams,
-        groups: groups,
-        groupMatches: groupMatches,
-        knockoutBrackets: knockoutBrackets,
-        standings: standings,
-        numTeams: numTeams,
-        numGroups: numGroups,
-        numVenues: numVenues
+        teams, groups, groupMatches, knockoutBrackets, standings,
+        numTeams, numGroups, numVenues, currentPhase
     };
     
     localStorage.setItem('torneoData', JSON.stringify(data));
@@ -559,9 +637,9 @@ function loadData() {
         standings = data.standings || {};
         numTeams = data.numTeams || 8;
         numGroups = data.numGroups || 2;
-        numVenues = data.numVenues || 2;
+        numVenues = data.numVenues || 3;
+        currentPhase = data.currentPhase || 'groups';
         
-        // Actualizar inputs
         document.getElementById('numTeams').value = numTeams;
         document.getElementById('numGroups').value = numGroups;
         document.getElementById('numVenues').value = numVenues;
@@ -573,13 +651,13 @@ function loadData() {
             if (input) input.value = team;
         });
         
-        // Mostrar secciones
+        document.getElementById('phaseDiagramSection').classList.remove('hidden');
         document.getElementById('groupsSection').classList.remove('hidden');
         document.getElementById('matchesSection').classList.remove('hidden');
         document.getElementById('standingsSection').classList.remove('hidden');
         document.getElementById('knockoutSection').classList.remove('hidden');
         
-        // Renderizar
+        renderPhaseDiagram();
         renderGroups();
         renderMatches();
         renderStandings();
